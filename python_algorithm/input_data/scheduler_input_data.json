@@ -1,0 +1,5 @@
+{
+    "semester_id_to_load": 1,
+    "cp_time_limit_seconds": 60,
+    "ga_generations": 100
+}

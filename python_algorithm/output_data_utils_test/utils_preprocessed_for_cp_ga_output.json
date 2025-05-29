@@ -1,0 +1,130 @@
+{
+    "settings": {
+        "basic_slot_duration_minutes": 50,
+        "break_duration_minutes": 5,
+        "current_semester_id": 1
+    },
+    "courses": {
+        "CS101": {
+            "name": "Intro CS",
+            "num_students": 30,
+            "required_periods_per_session": 2,
+            "eligible_instructor_ids": [
+                2,
+                1
+            ]
+        },
+        "MA201": {
+            "name": "Math II",
+            "num_students": 25,
+            "required_periods_per_session": 3,
+            "eligible_instructor_ids": [
+                2
+            ]
+        },
+        "PH100": {
+            "name": "Physics",
+            "num_students": 40,
+            "required_periods_per_session": 2,
+            "eligible_instructor_ids": [
+                1
+            ]
+        }
+    },
+    "lecturers": {
+        "1": {
+            "name": "Prof X",
+            "original_id_str": "L1",
+            "unavailable_slot_ids": [
+                3
+            ]
+        },
+        "2": {
+            "name": "Dr Y",
+            "original_id_str": "L2",
+            "unavailable_slot_ids": []
+        }
+    },
+    "classrooms": {
+        "1001": {
+            "room_code": "R101",
+            "capacity": 35
+        },
+        "1002": {
+            "room_code": "R102",
+            "capacity": 30
+        }
+    },
+    "timeslots": {
+        "1": {
+            "day_of_week": "Mon",
+            "start_time": "09:00:00",
+            "end_time": "10:40:00",
+            "num_periods": 2,
+            "session_date": "2024-01-08",
+            "original_id_str": "TS101"
+        },
+        "2": {
+            "day_of_week": "Mon",
+            "start_time": "13:00:00",
+            "end_time": "15:30:00",
+            "num_periods": 3,
+            "session_date": "2024-01-08",
+            "original_id_str": "TS102"
+        },
+        "3": {
+            "day_of_week": "Tue",
+            "start_time": "09:00:00",
+            "end_time": "10:40:00",
+            "num_periods": 2,
+            "session_date": "2024-01-09",
+            "original_id_str": "TS103"
+        }
+    },
+    "mappings": {
+        "lecturer_str_to_int": {
+            "L1": 1,
+            "L2": 2
+        },
+        "lecturer_int_to_str": {
+            "1": "L1",
+            "2": "L2"
+        },
+        "timeslot_str_to_int": {
+            "TS101": 1,
+            "TS102": 2,
+            "TS103": 3
+        },
+        "timeslot_int_to_str": {
+            "1": "TS101",
+            "2": "TS102",
+            "3": "TS103"
+        }
+    },
+    "student_enrollments_map": {
+        "CS101": [
+            "S002",
+            "S001"
+        ],
+        "PH100": [
+            "S003",
+            "S001"
+        ],
+        "MA201": [
+            "S002"
+        ]
+    },
+    "students_courses_map": {
+        "S001": [
+            "CS101",
+            "PH100"
+        ],
+        "S002": [
+            "MA201",
+            "CS101"
+        ],
+        "S003": [
+            "PH100"
+        ]
+    }
+}

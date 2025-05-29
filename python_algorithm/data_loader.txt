@@ -1,0 +1,354 @@
+# data_loader.py
+import mysql.connector
+from datetime import datetime, timedelta, time as dt_time
+from typing import List, Dict, Tuple, Set, Optional
+from collections import defaultdict
+
+# Import các model đã định nghĩa (đảm bảo models.py đã được cập nhật như trên)
+from models import TimeSlot, Classroom, Instructor, Course, Student
+
+DB_CONFIG = {
+    'host': 'localhost',
+    'user': 'root',
+    'password': '',
+    'database': 'dss'
+}
+
+def get_db_connection():
+    try:
+        conn = mysql.connector.connect(**DB_CONFIG)
+        return conn
+    except mysql.connector.Error as err:
+        print(f"Lỗi kết nối CSDL: {err}")
+        return None
+
+def string_to_time(time_str: any) -> Optional[dt_time]:
+    if isinstance(time_str, dt_time):
+        return time_str
+    if isinstance(time_str, timedelta):
+        return (datetime.min + time_str).time()
+    if not isinstance(time_str, str):
+        return None
+    try:
+        return datetime.strptime(time_str, '%H:%M:%S').time()
+    except ValueError:
+        try:
+            return datetime.strptime(time_str, '%H:%M').time()
+        except ValueError:
+            return None
+
+def check_time_overlap(slot_start: Optional[dt_time], slot_end: Optional[dt_time],
+                       busy_start: Optional[dt_time], busy_end: Optional[dt_time]) -> bool:
+    if not all(isinstance(t, dt_time) for t in [slot_start, slot_end, busy_start, busy_end]):
+        return False
+    if slot_start >= slot_end or busy_start >= busy_end:
+        return False
+    return max(slot_start, busy_start) < min(slot_end, busy_end)
+
+def calculate_num_periods(start_time_obj: any, end_time_obj: any) -> int:
+    s_time = string_to_time(start_time_obj)
+    e_time = string_to_time(end_time_obj)
+
+    if not s_time or not e_time:
+        return 1
+
+    dummy_date = datetime.min.date()
+    start_dt = datetime.combine(dummy_date, s_time)
+    end_dt = datetime.combine(dummy_date, e_time)
+
+    if end_dt <= start_dt:
+        return 1
+
+    total_duration_minutes = (end_dt - start_dt).total_seconds() / 60
+
+    if total_duration_minutes <= 0:
+        return 1
+
+    if 140 <= total_duration_minutes <= 170: return 3
+    elif 220 <= total_duration_minutes <= 250: return 4
+    elif 90 <= total_duration_minutes <= 125: return 2
+    elif total_duration_minutes > 250 : return 5
+    elif 40 <= total_duration_minutes <= 70: return 1
+    else:
+        nominal_period_duration = 50
+        if nominal_period_duration > 0:
+            calculated_periods = round(total_duration_minutes / nominal_period_duration)
+            return max(1, int(calculated_periods))
+        return 1
+
+
+def load_all_data(semester_id_to_load: int) -> Tuple[List[Course], List[Instructor], List[Classroom], List[TimeSlot], List[Student]]:
+    conn = get_db_connection()
+    if not conn:
+        return [], [], [], [], []
+
+    cursor = None
+    try:
+        cursor = conn.cursor(dictionary=True)
+
+        query_semester = "SELECT StartDate, EndDate FROM Semesters WHERE SemesterID = %s"
+        cursor.execute(query_semester, (semester_id_to_load,))
+        semester_details = cursor.fetchone()
+        if not semester_details:
+            print(f"DATA_LOADER Error: SemesterID {semester_id_to_load} not found.")
+            return [], [], [], [], []
+        semester_start_date = semester_details['StartDate']
+        semester_end_date = semester_details['EndDate']
+        print(f"DATA_LOADER: Loading data for SemesterID: {semester_id_to_load} ({semester_start_date.strftime('%Y-%m-%d')} to {semester_end_date.strftime('%Y-%m-%d')}).")
+
+        print("DATA_LOADER: Loading TimeSlots...")
+        query_timeslots = "SELECT TimeSlotID, DayOfWeek, SessionDate, StartTime, EndTime FROM TimeSlots WHERE SessionDate BETWEEN %s AND %s"
+        cursor.execute(query_timeslots, (semester_start_date, semester_end_date))
+        db_timeslots = cursor.fetchall()
+        timeslots_list: List[TimeSlot] = []
+        timeslot_map_by_db_id: Dict[int, TimeSlot] = {}
+
+        for row in db_timeslots:
+            start_t = string_to_time(row['StartTime'])
+            end_t = string_to_time(row['EndTime'])
+            if not start_t or not end_t:
+                print(f"DATA_LOADER Warning: Skipping TimeSlotID {row['TimeSlotID']} due to invalid time format: Start='{row['StartTime']}', End='{row['EndTime']}'")
+                continue
+            num_p = calculate_num_periods(start_t, end_t)
+            ts_obj = TimeSlot(
+                id=str(row['TimeSlotID']),
+                day_of_week=row['DayOfWeek'],
+                session_date=row['SessionDate'].strftime('%Y-%m-%d'),
+                start_time=start_t.strftime('%H:%M:%S'),
+                end_time=end_t.strftime('%H:%M:%S'),
+                num_periods=num_p
+            )
+            timeslots_list.append(ts_obj)
+            timeslot_map_by_db_id[int(row['TimeSlotID'])] = ts_obj
+        print(f"DATA_LOADER: Loaded {len(timeslots_list)} TimeSlots for the semester.")
+
+        print("DATA_LOADER: Loading Classrooms...")
+        query_classrooms = "SELECT ClassroomID, RoomCode, Capacity, Type FROM Classrooms" # Type là từ DB
+        cursor.execute(query_classrooms)
+        db_classrooms = cursor.fetchall()
+        classrooms_list: List[Classroom] = []
+        for row in db_classrooms:
+            classrooms_list.append(Classroom(
+                id=int(row['ClassroomID']),
+                room_code=str(row['RoomCode']),
+                capacity=int(row['Capacity']),
+                type=row.get('Type') # Lấy Type từ DB, có thể None
+            ))
+        print(f"DATA_LOADER: Loaded {len(classrooms_list)} Classrooms.")
+
+        print("DATA_LOADER: Loading Instructors...")
+        # Bảng Lecturers: LecturerID, LecturerName, Email, Department
+        # Model Instructor: id, name, unavailable_slot_ids
+        query_instructors = "SELECT LecturerID, LecturerName FROM Lecturers"
+        cursor.execute(query_instructors)
+        db_instructors = cursor.fetchall()
+        instructors_list: List[Instructor] = []
+        instructor_map_by_db_id: Dict[int, Instructor] = {}
+
+        for row in db_instructors:
+            instr_obj = Instructor(
+                id=str(row['LecturerID']),
+                name=row['LecturerName']
+            )
+            instructors_list.append(instr_obj)
+            instructor_map_by_db_id[int(row['LecturerID'])] = instr_obj
+        print(f"DATA_LOADER: Loaded {len(instructors_list)} Instructors.")
+
+        # Tạo map CourseID -> Assigned Lecturer DB ID từ ScheduledClasses cho học kỳ hiện tại
+        # Điều này dựa trên giả định "mỗi môn học đã có 1 người giảng dạy rồi" là dữ liệu đầu vào,
+        # và thông tin này được thể hiện trong ScheduledClasses cho học kỳ đang tải.
+        print(f"DATA_LOADER: Determining assigned instructors for courses in SemesterID {semester_id_to_load} from ScheduledClasses...")
+        course_to_lecturer_db_id_map: Dict[str, int] = {}
+        query_assignments = """
+            SELECT CourseID, LecturerID
+            FROM ScheduledClasses
+            WHERE SemesterID = %s
+        """
+        cursor.execute(query_assignments, (semester_id_to_load,))
+        assignments = cursor.fetchall()
+
+        temp_course_lecturers: Dict[str, Set[int]] = defaultdict(set)
+        for assign_row in assignments:
+            course_db_id = str(assign_row['CourseID'])
+            lecturer_db_id = int(assign_row['LecturerID'])
+            temp_course_lecturers[course_db_id].add(lecturer_db_id)
+
+        valid_assignments = True
+        for c_id, lec_ids_set in temp_course_lecturers.items():
+            if len(lec_ids_set) > 1:
+                print(f"DATA_LOADER Error: Course {c_id} in Semester {semester_id_to_load} is assigned to multiple lecturers ({lec_ids_set}) in ScheduledClasses. This violates the 'one instructor per course' rule. Please fix data.")
+                valid_assignments = False
+            elif len(lec_ids_set) == 1:
+                course_to_lecturer_db_id_map[c_id] = list(lec_ids_set)[0]
+            # Nếu len == 0, không có vấn đề gì ở bước này, sẽ được kiểm tra khi load Courses
+        
+        if not valid_assignments:
+            print("DATA_LOADER: Halting due to inconsistent instructor assignments in ScheduledClasses.")
+            return [], [], [], [], []
+        print(f"DATA_LOADER: Determined {len(course_to_lecturer_db_id_map)} course-instructor assignments for the semester.")
+
+
+        print("DATA_LOADER: Loading Courses...")
+        # Bảng Courses: CourseID, CourseName, Credits, ExpectedStudents, SessionDurationSlots
+        # Model Course: id, name, num_students, required_periods_per_session, assigned_instructor_id
+        query_courses_table = """
+            SELECT CourseID, CourseName, Credits, ExpectedStudents, SessionDurationSlots
+            FROM Courses
+        """
+        cursor.execute(query_courses_table)
+        db_courses_info = cursor.fetchall()
+        courses_list: List[Course] = []
+
+        for row_course_info in db_courses_info:
+            course_db_id_str = str(row_course_info['CourseID'])
+            
+            assigned_lecturer_db_id = course_to_lecturer_db_id_map.get(course_db_id_str)
+            
+            if assigned_lecturer_db_id is None:
+                # Nếu một môn học có trong bảng Courses nhưng không có phân công GV trong ScheduledClasses cho học kỳ này
+                # thì nó không thể được xếp lịch theo yêu cầu "mỗi môn phải có 1 GV".
+                # Bạn có thể quyết định bỏ qua hoặc báo lỗi tùy theo logic nghiệp vụ.
+                # Ở đây, chúng ta sẽ bỏ qua và ghi log, vì thuật toán không thể xếp lịch cho môn không có GV.
+                print(f"DATA_LOADER Info: Course {course_db_id_str} ('{row_course_info['CourseName']}') has no instructor assignment in ScheduledClasses for SemesterID {semester_id_to_load}. Skipping this course.")
+                continue
+
+            if assigned_lecturer_db_id not in instructor_map_by_db_id:
+                print(f"DATA_LOADER Error: Course {course_db_id_str} is assigned to LecturerDBID {assigned_lecturer_db_id} (from ScheduledClasses), but this lecturer does not exist in loaded instructors. Skipping this course.")
+                continue
+            
+            assigned_instructor_model_id = instructor_map_by_db_id[assigned_lecturer_db_id].id
+
+            courses_list.append(Course(
+                id=course_db_id_str,
+                name=row_course_info['CourseName'],
+                num_students=row_course_info['ExpectedStudents'] if row_course_info['ExpectedStudents'] is not None else 0,
+                required_periods_per_session=row_course_info['SessionDurationSlots'] if row_course_info['SessionDurationSlots'] is not None else 1,
+                assigned_instructor_id=assigned_instructor_model_id
+            ))
+        print(f"DATA_LOADER: Loaded {len(courses_list)} Courses that have valid instructor assignments for the semester.")
+
+        print("DATA_LOADER: Loading Students and their enrollments...")
+        # Bảng Students: StudentID, StudentName, Email, Program
+        query_students = "SELECT StudentID FROM Students"
+        cursor.execute(query_students)
+        students_list: List[Student] = []
+        student_map_by_original_id: Dict[str, Student] = {}
+
+        for row in cursor.fetchall():
+            student_id_str = str(row['StudentID'])
+            student_obj = Student(id=student_id_str, enrolled_course_ids=set())
+            students_list.append(student_obj)
+            student_map_by_original_id[student_id_str] = student_obj
+
+        # Bảng StudentEnrollments: EnrollmentID, StudentID, CourseID, SemesterID
+        query_enrollments = "SELECT StudentID, CourseID FROM StudentEnrollments WHERE SemesterID = %s"
+        cursor.execute(query_enrollments, (semester_id_to_load,))
+        for row in cursor.fetchall():
+            student_original_id_str = str(row['StudentID'])
+            course_original_id_str = str(row['CourseID'])
+            if student_original_id_str in student_map_by_original_id:
+                if any(c.id == course_original_id_str for c in courses_list): # Chỉ thêm nếu môn học được load
+                     student_map_by_original_id[student_original_id_str].enrolled_course_ids.add(course_original_id_str)
+        print(f"DATA_LOADER: Loaded {len(students_list)} Students and updated enrollments for semester {semester_id_to_load}.")
+
+        print("DATA_LOADER: Updating Instructor unavailable slots (overlap logic)...")
+        # Bảng InstructorUnavailableSlots: LecturerID, BusyDayOfWeek, BusyStartTime, BusyEndTime, Reason, SemesterID
+        query_unavailable_defs = """
+            SELECT LecturerID, BusyDayOfWeek, BusyStartTime, BusyEndTime
+            FROM InstructorUnavailableSlots
+            WHERE SemesterID = %s OR SemesterID IS NULL
+        """
+        cursor.execute(query_unavailable_defs, (semester_id_to_load,))
+        db_unavailable_definitions = cursor.fetchall()
+
+        for unavailable_def in db_unavailable_definitions:
+            lecturer_db_id_int = int(unavailable_def['LecturerID'])
+            if lecturer_db_id_int not in instructor_map_by_db_id:
+                continue
+
+            instructor_obj = instructor_map_by_db_id[lecturer_db_id_int]
+            busy_day_str = unavailable_def['BusyDayOfWeek']
+            busy_start_time_obj = string_to_time(unavailable_def['BusyStartTime'])
+            busy_end_time_obj = string_to_time(unavailable_def['BusyEndTime'])
+
+            if not busy_start_time_obj or not busy_end_time_obj:
+                continue
+
+            for ts_obj in timeslots_list:
+                if ts_obj.day_of_week.lower() == busy_day_str.lower():
+                    ts_start_obj = string_to_time(ts_obj.start_time)
+                    ts_end_obj = string_to_time(ts_obj.end_time)
+                    if check_time_overlap(ts_start_obj, ts_end_obj, busy_start_time_obj, busy_end_time_obj):
+                        instructor_obj.unavailable_slot_ids.add(ts_obj.id)
+        print(f"DATA_LOADER: Updated unavailable slots for instructors.")
+
+    except mysql.connector.Error as err:
+        print(f"DATA_LOADER: Database error during data loading: {err}")
+        return [], [], [], [], []
+    except Exception as e:
+        print(f"DATA_LOADER: An unexpected error occurred during data loading: {e}")
+        import traceback
+        traceback.print_exc()
+        return [], [], [], [], []
+    finally:
+        if cursor:
+            cursor.close()
+        if conn and conn.is_connected():
+            conn.close()
+
+    return courses_list, instructors_list, classrooms_list, timeslots_list, students_list
+
+if __name__ == '__main__':
+    print("DATA_LOADER: Testing data loader...")
+    target_semester_id = 1 # <<< THAY ĐỔI ID NÀY để kiểm tra với học kỳ có dữ liệu
+
+    conn_test = get_db_connection()
+    sem_exists = False
+    if conn_test:
+        try:
+            cursor_test = conn_test.cursor()
+            cursor_test.execute("SELECT 1 FROM Semesters WHERE SemesterID = %s", (target_semester_id,))
+            if cursor_test.fetchone():
+                sem_exists = True
+            cursor_test.close()
+        except Exception as e_test_sem:
+            print(f"DATA_LOADER Test: Error checking semester existence: {e_test_sem}")
+        finally:
+            if conn_test.is_connected():
+                conn_test.close()
+
+    if not sem_exists:
+        print(f"DATA_LOADER Test: SemesterID {target_semester_id} does not exist in the database. Skipping load_all_data test.")
+        print("Please ensure you have a semester with this ID, or change target_semester_id.")
+    else:
+        print(f"DATA_LOADER Test: Attempting to load data for SemesterID {target_semester_id}...")
+        loaded_courses, loaded_instructors, loaded_classrooms, loaded_timeslots, loaded_students = load_all_data(target_semester_id)
+
+        print(f"\n--- Data Loading Summary for Semester {target_semester_id} ---")
+        print(f"Total Courses loaded: {len(loaded_courses)}")
+        if loaded_courses:
+            for i, c in enumerate(loaded_courses[:min(3, len(loaded_courses))]):
+                 print(f"  Sample Course {i}: {c}")
+
+        print(f"Total Instructors loaded: {len(loaded_instructors)}")
+        if loaded_instructors:
+            for i, instr in enumerate(loaded_instructors[:min(3, len(loaded_instructors))]):
+                 print(f"  Sample Instructor {i}: {instr} (Unavailable Slots: {len(instr.unavailable_slot_ids)})")
+
+        print(f"Total Classrooms loaded: {len(loaded_classrooms)}")
+        if loaded_classrooms:
+            print(f"  Sample Classroom: {loaded_classrooms[0]}")
+
+        print(f"Total TimeSlots for semester: {len(loaded_timeslots)}")
+        if loaded_timeslots:
+            print(f"  Sample TimeSlot: {loaded_timeslots[0]}")
+
+        print(f"Total Students loaded: {len(loaded_students)}")
+        if loaded_students:
+            student_with_enrollments = next((s for s in loaded_students if s.enrolled_course_ids), None)
+            if student_with_enrollments:
+                 print(f"  Sample Student with enrollments: {student_with_enrollments}")
+            elif loaded_students:
+                print(f"  Sample Student (no enrollments or first): {loaded_students[0]}")
+        
+        print("\nDATA_LOADER Test: Load process finished.")

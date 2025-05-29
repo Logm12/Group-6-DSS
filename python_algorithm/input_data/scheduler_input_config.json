@@ -1,0 +1,14 @@
+{
+    "semester_id_to_load": 1,
+    "cp_time_limit_seconds": 60,
+    "ga_generations": 50,
+    "ga_population_size": 30,
+    "ga_crossover_rate": 0.85,
+    "ga_mutation_rate": 0.15,
+    "ga_tournament_size": 5,
+    "ga_allow_hard_constraint_violations": false,
+    "priority_student_clash": "medium",
+    "priority_lecturer_load_break": "medium",
+    "priority_classroom_util": "medium",
+    "progress_log_file_path_from_php": "output_data\\progress_schedprog_6838167d062bb.txt"
+}

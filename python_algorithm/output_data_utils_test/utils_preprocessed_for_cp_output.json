@@ -1,0 +1,37 @@
+{
+    "settings": {
+        "basic_slot_duration_minutes": 50,
+        "break_duration_minutes": 5
+    },
+    "courses": {
+        "CS101": {
+            "name": "Intro CS",
+            "num_students": 30,
+            "required_periods_per_session": 2,
+            "eligible_instructor_ids": [
+                "L1",
+                "L2"
+            ]
+        },
+        "MA201": {
+            "name": "Math II",
+            "num_students": 25,
+            "required_periods_per_session": 3,
+            "eligible_instructor_ids": [
+                "L2"
+            ]
+        }
+    },
+    "lecturers": {},
+    "classrooms": {
+        "1001": {
+            "room_code": "R101",
+            "capacity": 35
+        },
+        "1002": {
+            "room_code": "R102",
+            "capacity": 30
+        }
+    },
+    "timeslots": {}
+}

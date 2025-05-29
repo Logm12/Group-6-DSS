@@ -1,0 +1,88 @@
+# models.py
+from dataclasses import dataclass, field
+from typing import List, Optional, Set
+
+# ... (Các class TimeSlot, Classroom, Instructor giữ nguyên như phiên bản trước) ...
+@dataclass(frozen=True)
+class TimeSlot:
+    id: str # Original TimeSlotID from DB, converted to string
+    day_of_week: str
+    session_date: str # YYYY-MM-DD
+    start_time: str  # HH:MM:SS
+    end_time: str    # HH:MM:SS
+    num_periods: int
+
+    def __repr__(self):
+        return (f"TimeSlot(id='{self.id}', day='{self.day_of_week}', date='{self.session_date}', "
+                f"time='{self.start_time}-{self.end_time}', periods={self.num_periods})")
+
+@dataclass(frozen=True)
+class Classroom:
+    id: int # Original ClassroomID from DB
+    room_code: str
+    capacity: int
+    type: Optional[str] = None # Từ Classrooms.Type, có thể NULL (mặc định 'Theory')
+
+    def __repr__(self):
+        type_str = f", type='{self.type}'" if self.type else ""
+        return f"Classroom(id={self.id}, room_code='{self.room_code}', capacity={self.capacity}{type_str})"
+
+@dataclass
+class Instructor:
+    id: str # Original LecturerID from DB, converted to string
+    name: str
+    unavailable_slot_ids: Set[str] = field(default_factory=set) # Set of TimeSlot.id
+
+    def __hash__(self):
+        return hash(self.id)
+
+    def __eq__(self, other):
+        if not isinstance(other, Instructor):
+            return NotImplemented
+        return self.id == other.id
+
+    def __repr__(self):
+        return f"Instructor(id='{self.id}', name='{self.name}')"
+
+# <<<< KIỂM TRA KỸ CLASS NÀY >>>>
+@dataclass
+class Course:
+    id: str # Original CourseID from DB
+    name: str
+    num_students: int # Từ Courses.ExpectedStudents
+    required_periods_per_session: int # Từ Courses.SessionDurationSlots
+    assigned_instructor_id: str # ID (model) của giảng viên đã được gán, lấy từ ScheduledClasses
+
+    def __hash__(self):
+        return hash(self.id)
+
+    def __eq__(self, other):
+        if not isinstance(other, Course):
+            return NotImplemented
+        return self.id == other.id
+
+    def __repr__(self):
+        return (f"Course(id='{self.id}', name='{self.name}', students={self.num_students}, "
+                f"periods={self.required_periods_per_session}, instr_id='{self.assigned_instructor_id}')")
+# <<<< KẾT THÚC KIỂM TRA CLASS Course >>>>
+
+@dataclass(frozen=True)
+class Student:
+    id: str # Original StudentID from DB
+    enrolled_course_ids: Set[str] = field(default_factory=set) # Set of Course.id
+
+    def __repr__(self):
+        return f"Student(id='{self.id}', enrolled_courses={len(self.enrolled_course_ids)})"
+
+@dataclass(frozen=True)
+class ScheduledClass: # Đại diện cho một lớp học cụ thể đã được xếp lịch (output của thuật toán)
+    course_id: str      # Course.id
+    instructor_id: str  # Instructor.id
+    classroom_id: int   # Classroom.id
+    timeslot_id: str    # TimeSlot.id
+
+    def __repr__(self):
+        return (f"ScheduledClass(Course: {self.course_id}, Instr: {self.instructor_id}, "
+                f"RoomPK: {self.classroom_id}, Slot: {self.timeslot_id})")
+
+Schedule = List[ScheduledClass]

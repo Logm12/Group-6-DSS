@@ -1,0 +1,18 @@
+[2025-05-29 15:10:45.849] PYTHON_PROGRESS: Progress log initialized.
+[2025-05-29 15:10:45.849] PYTHON_PROGRESS: Python Scheduler Process Started.
+[2025-05-29 15:10:45.850] PYTHON_PROGRESS: ================================================================================
+[2025-05-29 15:10:45.851] PYTHON_PROGRESS: =====                   0. LOADING SCHEDULER CONFIGURATION                   =====
+[2025-05-29 15:10:45.851] PYTHON_PROGRESS: ================================================================================
+[2025-05-29 15:10:45.851] PYTHON_PROGRESS: Effective Configuration (excluding log path): {'semester_id_to_load': 1, 'cp_time_limit_seconds': 60, 'ga_population_size': 30, 'ga_generations': 50, 'ga_crossover_rate': 0.85, 'ga_mutation_rate': 0.15, 'ga_tournament_size': 5, 'ga_allow_hard_constraint_violations': False, 'priority_student_clash': 'medium', 'priority_lecturer_load_break': 'medium', 'priority_classroom_util': 'medium'}
+[2025-05-29 15:10:45.857] PYTHON_PROGRESS: Parameters Parsed: SemesterID=1, CP_Time=60.0s, GA_Pop=30, GA_Gens=50, Priorities={'student_clash': 'medium', 'lecturer_load_break': 'medium', 'classroom_util': 'medium'}, GA_Allow_HC=False
+[2025-05-29 15:10:45.857] PYTHON_PROGRESS: ================================================================================
+[2025-05-29 15:10:45.859] PYTHON_PROGRESS: =====             1. LOADING & PREPROCESSING DATA - SEMESTER: 1              =====
+[2025-05-29 15:10:45.859] PYTHON_PROGRESS: ================================================================================
+[2025-05-29 15:10:45.935] PYTHON_PROGRESS: Raw data loaded: 50 SchedClasses, 48 Instrs, 23 Rooms, 24 TSlots, 35 Studs, 55 CourseCatalog entries.
+[2025-05-29 15:10:45.935] PYTHON_PROGRESS: Data preprocessed. 50 items identified for potential scheduling.
+[2025-05-29 15:10:45.935] PYTHON_PROGRESS: ================================================================================
+[2025-05-29 15:10:45.935] PYTHON_PROGRESS: =====                2. SOLVING HARD CONSTRAINTS WITH CP-SAT                 =====
+[2025-05-29 15:10:45.935] PYTHON_PROGRESS: ================================================================================
+[2025-05-29 15:10:45.935] PYTHON_PROGRESS: CP_SAT: CP-SAT Module Initialized.
+[2025-05-29 15:10:45.935] PYTHON_PROGRESS: CP_SAT: Starting CP-SAT model solving process...
+[2025-05-29 15:10:45.935] PYTHON_PROGRESS: CP_SAT: Starting pre-filtering and variable creation...

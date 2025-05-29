@@ -1,0 +1,5 @@
+{
+    "status": "error_module_import",
+    "message": "Failed to import required Python modules: cannot import name 'DB_CONFIG' from 'utils' (c:\\xampp\\htdocs\\DSS\\python_algorithm\\utils.py). Check Python environment and file paths.",
+    "traceback": "Traceback (most recent call last):\n  File \"c:\\xampp\\htdocs\\DSS\\python_algorithm\\main_solver.py\", line 15, in <module>\n    from utils import (\nImportError: cannot import name 'DB_CONFIG' from 'utils' (c:\\xampp\\htdocs\\DSS\\python_algorithm\\utils.py)\n"
+}
