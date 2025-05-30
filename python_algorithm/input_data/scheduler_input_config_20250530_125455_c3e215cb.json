@@ -1,6 +1,5 @@
 {
     "semester_id_to_load": 1,
-    "python_executable_path_from_php": "python",
     "cp_time_limit_seconds": 30,
     "ga_population_size": 50,
     "ga_generations": 100,
@@ -11,5 +10,6 @@
     "priority_student_clash": "medium",
     "priority_lecturer_load_break": "medium",
     "priority_classroom_util": "medium",
-    "progress_log_file_path_from_php": "output_data/logs/scheduler_progress_20250530_065855.log"
+    "progress_log_file_path_from_php": "output_data/logs/scheduler_progress_20250530_125455_c3e215cb.log",
+    "output_filename_override": "output_data/final_schedule_output_20250530_125455_c3e215cb.json"
 }

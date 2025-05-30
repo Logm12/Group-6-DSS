@@ -1,0 +1,7 @@
+{
+    "status": "error_invalid_config_type_py",
+    "message": "Python Configuration Error: 'semester_id_to_load' is missing in configuration.",
+    "semester_id": null,
+    "final_schedule": [],
+    "metrics": {}
+}

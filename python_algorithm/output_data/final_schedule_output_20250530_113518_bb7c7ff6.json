@@ -1,16 +1,39 @@
 {
-    "cp_metrics": {
-        "solver_status": "OPTIMAL",
-        "solve_time_seconds": 1.504,
-        "model_build_time_seconds": 0.201,
-        "num_items_initial_from_data": 50,
-        "num_items_targeted_for_cp_solver": 50,
-        "num_items_successfully_scheduled_by_cp": 50,
-        "cp_scheduling_success_rate_percent": 100.0,
-        "num_items_unscheduled_by_cp_solver": 0,
-        "list_of_cp_unscheduled_item_original_db_ids": []
+    "status": "success_full_schedule_generated_py",
+    "message": "Python: Schedule generation status: success_full_schedule_generated_py. Events: 50. GA penalty: 2220.00.",
+    "semester_id": 1,
+    "metrics": {
+        "input_data_summary": {
+            "num_raw_scheduled_classes_from_db": 50,
+            "num_items_after_preprocessing": 50
+        },
+        "cp_solver_summary": {
+            "solver_status": "OPTIMAL",
+            "solve_time_seconds": 1.671,
+            "model_build_time_seconds": 0.201,
+            "num_items_initial_from_data": 50,
+            "num_items_targeted_for_cp_solver": 50,
+            "num_items_successfully_scheduled_by_cp": 50,
+            "cp_scheduling_success_rate_percent": 100.0,
+            "num_items_unscheduled_by_cp_solver": 0,
+            "list_of_cp_unscheduled_item_original_db_ids": []
+        },
+        "ga_solver_summary": {
+            "final_penalty_score": 2220.0,
+            "detailed_soft_constraint_metrics": {
+                "lecturer_underload": {
+                    "count": 74,
+                    "penalty_contribution": 2220.0
+                }
+            },
+            "ga_hard_constraints_violated_in_final": false
+        },
+        "overall_performance": {
+            "total_execution_time_seconds": 34.823,
+            "num_events_in_final_schedule": 50
+        }
     },
-    "cp_schedule": [
+    "final_schedule": [
         {
             "schedule_db_id": 113,
             "course_id_str": "BSA105501",
@@ -40,12 +63,12 @@
             "course_id_str": "BSA301202",
             "lecturer_id_db": 35,
             "classroom_id_db": 13,
-            "timeslot_id_db": 2,
+            "timeslot_id_db": 4,
             "course_name": "Marketing Research",
             "num_students": 45,
             "lecturer_name": "Vu Minh Quan",
             "room_code": "409",
-            "timeslot_info_str": "Monday (09:50:00-12:30:00)"
+            "timeslot_info_str": "Monday (15:50:00-18:30:00)"
         },
         {
             "schedule_db_id": 116,
@@ -88,12 +111,12 @@
             "course_id_str": "INE105002",
             "lecturer_id_db": 36,
             "classroom_id_db": 15,
-            "timeslot_id_db": 2,
+            "timeslot_id_db": 12,
             "course_name": "Microeconomics",
             "num_students": 45,
             "lecturer_name": "Nguyen Tuan Minh",
             "room_code": "405",
-            "timeslot_info_str": "Monday (09:50:00-12:30:00)"
+            "timeslot_info_str": "Wednesday (15:50:00-18:30:00)"
         },
         {
             "schedule_db_id": 120,
@@ -112,12 +135,12 @@
             "course_id_str": "INE300901",
             "lecturer_id_db": 22,
             "classroom_id_db": 20,
-            "timeslot_id_db": 3,
+            "timeslot_id_db": 13,
             "course_name": "International Project Management",
             "num_students": 45,
             "lecturer_name": "Hoang Trieu Hoa",
             "room_code": "408",
-            "timeslot_info_str": "Monday (13:00:00-15:40:00)"
+            "timeslot_info_str": "Thursday (07:00:00-09:40:00)"
         },
         {
             "schedule_db_id": 122,
@@ -148,12 +171,12 @@
             "course_id_str": "INS200903",
             "lecturer_id_db": 18,
             "classroom_id_db": 4,
-            "timeslot_id_db": 3,
+            "timeslot_id_db": 11,
             "course_name": "Principles of Accounting",
             "num_students": 45,
             "lecturer_name": "Nguyen Thi Kim Duyen",
             "room_code": "507",
-            "timeslot_info_str": "Monday (13:00:00-15:40:00)"
+            "timeslot_info_str": "Wednesday (13:00:00-15:40:00)"
         },
         {
             "schedule_db_id": 125,
@@ -207,12 +230,12 @@
             "schedule_db_id": 130,
             "course_id_str": "INS203702",
             "lecturer_id_db": 26,
-            "classroom_id_db": 1,
+            "classroom_id_db": 23,
             "timeslot_id_db": 7,
             "course_name": "Information Systems and Business Processes",
             "num_students": 45,
             "lecturer_name": "Nguyen Duy Thanh",
-            "room_code": "407",
+            "room_code": "508",
             "timeslot_info_str": "Tuesday (13:00:00-15:40:00)"
         },
         {
@@ -256,12 +279,12 @@
             "course_id_str": "INS210902",
             "lecturer_id_db": 19,
             "classroom_id_db": 14,
-            "timeslot_id_db": 2,
+            "timeslot_id_db": 23,
             "course_name": "Managerial Accounting",
             "num_students": 45,
             "lecturer_name": "Hoang Ha Anh",
             "room_code": "601",
-            "timeslot_info_str": "Monday (09:50:00-12:30:00)"
+            "timeslot_info_str": "Saturday (13:00:00-15:40:00)"
         },
         {
             "schedule_db_id": 136,
@@ -280,12 +303,12 @@
             "course_id_str": "INS300202",
             "lecturer_id_db": 18,
             "classroom_id_db": 4,
-            "timeslot_id_db": 2,
+            "timeslot_id_db": 22,
             "course_name": "Financial Accounting 2",
             "num_students": 45,
             "lecturer_name": "Nguyen Thi Kim Duyen",
             "room_code": "507",
-            "timeslot_info_str": "Monday (09:50:00-12:30:00)"
+            "timeslot_info_str": "Saturday (09:50:00-12:30:00)"
         },
         {
             "schedule_db_id": 138,
@@ -388,36 +411,36 @@
             "course_id_str": "INS306002",
             "lecturer_id_db": 43,
             "classroom_id_db": 7,
-            "timeslot_id_db": 1,
+            "timeslot_id_db": 22,
             "course_name": "Advanced Database Development",
             "num_students": 45,
             "lecturer_name": "Do Phuong Huyen",
             "room_code": "514",
-            "timeslot_info_str": "Monday (07:00:00-09:40:00)"
+            "timeslot_info_str": "Saturday (09:50:00-12:30:00)"
         },
         {
             "schedule_db_id": 148,
             "course_id_str": "INS306603",
             "lecturer_id_db": 21,
-            "classroom_id_db": 8,
-            "timeslot_id_db": 1,
+            "classroom_id_db": 4,
+            "timeslot_id_db": 24,
             "course_name": "Business Solutions for Enterprises",
             "num_students": 45,
             "lecturer_name": "Hoang Tuyet Minh",
-            "room_code": "512",
-            "timeslot_info_str": "Monday (07:00:00-09:40:00)"
+            "room_code": "507",
+            "timeslot_info_str": "Saturday (15:50:00-18:30:00)"
         },
         {
             "schedule_db_id": 149,
             "course_id_str": "INS306901",
             "lecturer_id_db": 44,
             "classroom_id_db": 9,
-            "timeslot_id_db": 1,
+            "timeslot_id_db": 19,
             "course_name": "Decision Support Systems",
             "num_students": 45,
             "lecturer_name": "Chu Van Hung",
             "room_code": "506",
-            "timeslot_info_str": "Monday (07:00:00-09:40:00)"
+            "timeslot_info_str": "Friday (13:00:00-15:40:00)"
         },
         {
             "schedule_db_id": 150,
@@ -436,12 +459,12 @@
             "course_id_str": "INS308001",
             "lecturer_id_db": 39,
             "classroom_id_db": 11,
-            "timeslot_id_db": 1,
+            "timeslot_id_db": 15,
             "course_name": "Artificial Intelligence",
             "num_students": 45,
             "lecturer_name": "Nguyen Thi Kim Oanh",
             "room_code": "503",
-            "timeslot_info_str": "Monday (07:00:00-09:40:00)"
+            "timeslot_info_str": "Thursday (13:00:00-15:40:00)"
         },
         {
             "schedule_db_id": 152,
@@ -460,12 +483,12 @@
             "course_id_str": "INS315101",
             "lecturer_id_db": 42,
             "classroom_id_db": 12,
-            "timeslot_id_db": 1,
+            "timeslot_id_db": 18,
             "course_name": "Embedded Control Systems",
             "num_students": 45,
             "lecturer_name": "Bui To Quyen",
             "room_code": "501",
-            "timeslot_info_str": "Monday (07:00:00-09:40:00)"
+            "timeslot_info_str": "Friday (09:50:00-12:30:00)"
         },
         {
             "schedule_db_id": 154,
@@ -484,12 +507,12 @@
             "course_id_str": "INS318901",
             "lecturer_id_db": 35,
             "classroom_id_db": 13,
-            "timeslot_id_db": 1,
+            "timeslot_id_db": 2,
             "course_name": "Corporate Finance",
             "num_students": 45,
             "lecturer_name": "Vu Minh Quan",
             "room_code": "409",
-            "timeslot_info_str": "Monday (07:00:00-09:40:00)"
+            "timeslot_info_str": "Monday (09:50:00-12:30:00)"
         },
         {
             "schedule_db_id": 156,
@@ -544,48 +567,48 @@
             "course_id_str": "INS328003",
             "lecturer_id_db": 5,
             "classroom_id_db": 18,
-            "timeslot_id_db": 1,
+            "timeslot_id_db": 23,
             "course_name": "Data Preparation and Visualization",
             "num_students": 45,
             "lecturer_name": "Ho Nguyen Nhu Y",
             "room_code": "502",
-            "timeslot_info_str": "Monday (07:00:00-09:40:00)"
+            "timeslot_info_str": "Saturday (13:00:00-15:40:00)"
         },
         {
             "schedule_db_id": 163,
             "course_id_str": "MAT100501",
             "lecturer_id_db": 48,
             "classroom_id_db": 19,
-            "timeslot_id_db": 1,
+            "timeslot_id_db": 20,
             "course_name": "Mathematical Economics",
             "num_students": 45,
             "lecturer_name": "Nguyen Thi Thanh Phuong",
             "room_code": "602",
-            "timeslot_info_str": "Monday (07:00:00-09:40:00)"
+            "timeslot_info_str": "Friday (15:50:00-18:30:00)"
         },
         {
             "schedule_db_id": 164,
             "course_id_str": "MAT109204",
             "lecturer_id_db": 22,
             "classroom_id_db": 20,
-            "timeslot_id_db": 1,
+            "timeslot_id_db": 11,
             "course_name": "Advanced Mathematics",
             "num_students": 45,
             "lecturer_name": "Hoang Trieu Hoa",
             "room_code": "408",
-            "timeslot_info_str": "Monday (07:00:00-09:40:00)"
+            "timeslot_info_str": "Wednesday (13:00:00-15:40:00)"
         },
         {
             "schedule_db_id": 165,
             "course_id_str": "PEC100802",
             "lecturer_id_db": 33,
             "classroom_id_db": 21,
-            "timeslot_id_db": 1,
+            "timeslot_id_db": 21,
             "course_name": "Marx Leninist Political Economy",
             "num_students": 45,
             "lecturer_name": "Nghiem Xuan Hoa",
             "room_code": "603",
-            "timeslot_info_str": "Monday (07:00:00-09:40:00)"
+            "timeslot_info_str": "Saturday (07:00:00-09:40:00)"
         },
         {
             "schedule_db_id": 166,

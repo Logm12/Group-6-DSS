@@ -1,15 +1,15 @@
 {
     "semester_id_to_load": 1,
-    "python_executable_path_from_php": "python",
     "cp_time_limit_seconds": 30,
     "ga_population_size": 50,
     "ga_generations": 100,
     "ga_crossover_rate": 0.8,
     "ga_mutation_rate": 0.2,
     "ga_tournament_size": 5,
-    "ga_allow_hard_constraint_violations": true,
+    "ga_allow_hard_constraint_violations": false,
     "priority_student_clash": "medium",
     "priority_lecturer_load_break": "medium",
     "priority_classroom_util": "medium",
-    "progress_log_file_path_from_php": "output_data/logs/scheduler_progress_20250530_065855.log"
+    "progress_log_file_path_from_php": "output_data/logs/scheduler_progress_20250530_124902_9804791e.log",
+    "output_filename_override": "output_data/final_schedule_output_20250530_124902_9804791e.json"
 }

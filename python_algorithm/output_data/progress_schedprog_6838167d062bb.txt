@@ -1,18 +1,193 @@
-[2025-05-29 15:10:45.849] PYTHON_PROGRESS: Progress log initialized.
-[2025-05-29 15:10:45.849] PYTHON_PROGRESS: Python Scheduler Process Started.
-[2025-05-29 15:10:45.850] PYTHON_PROGRESS: ================================================================================
-[2025-05-29 15:10:45.851] PYTHON_PROGRESS: =====                   0. LOADING SCHEDULER CONFIGURATION                   =====
-[2025-05-29 15:10:45.851] PYTHON_PROGRESS: ================================================================================
-[2025-05-29 15:10:45.851] PYTHON_PROGRESS: Effective Configuration (excluding log path): {'semester_id_to_load': 1, 'cp_time_limit_seconds': 60, 'ga_population_size': 30, 'ga_generations': 50, 'ga_crossover_rate': 0.85, 'ga_mutation_rate': 0.15, 'ga_tournament_size': 5, 'ga_allow_hard_constraint_violations': False, 'priority_student_clash': 'medium', 'priority_lecturer_load_break': 'medium', 'priority_classroom_util': 'medium'}
-[2025-05-29 15:10:45.857] PYTHON_PROGRESS: Parameters Parsed: SemesterID=1, CP_Time=60.0s, GA_Pop=30, GA_Gens=50, Priorities={'student_clash': 'medium', 'lecturer_load_break': 'medium', 'classroom_util': 'medium'}, GA_Allow_HC=False
-[2025-05-29 15:10:45.857] PYTHON_PROGRESS: ================================================================================
-[2025-05-29 15:10:45.859] PYTHON_PROGRESS: =====             1. LOADING & PREPROCESSING DATA - SEMESTER: 1              =====
-[2025-05-29 15:10:45.859] PYTHON_PROGRESS: ================================================================================
-[2025-05-29 15:10:45.935] PYTHON_PROGRESS: Raw data loaded: 50 SchedClasses, 48 Instrs, 23 Rooms, 24 TSlots, 35 Studs, 55 CourseCatalog entries.
-[2025-05-29 15:10:45.935] PYTHON_PROGRESS: Data preprocessed. 50 items identified for potential scheduling.
-[2025-05-29 15:10:45.935] PYTHON_PROGRESS: ================================================================================
-[2025-05-29 15:10:45.935] PYTHON_PROGRESS: =====                2. SOLVING HARD CONSTRAINTS WITH CP-SAT                 =====
-[2025-05-29 15:10:45.935] PYTHON_PROGRESS: ================================================================================
-[2025-05-29 15:10:45.935] PYTHON_PROGRESS: CP_SAT: CP-SAT Module Initialized.
-[2025-05-29 15:10:45.935] PYTHON_PROGRESS: CP_SAT: Starting CP-SAT model solving process...
-[2025-05-29 15:10:45.935] PYTHON_PROGRESS: CP_SAT: Starting pre-filtering and variable creation...
+[2025-05-30 10:23:52.223] PYTHON_PROGRESS: Progress log initialized.
+[2025-05-30 10:23:52.223] PYTHON_PROGRESS: Python Scheduler Process Started.
+[2025-05-30 10:23:52.224] PYTHON_PROGRESS: ================================================================================
+[2025-05-30 10:23:52.225] PYTHON_PROGRESS: =====                   0. LOADING SCHEDULER CONFIGURATION                   =====
+[2025-05-30 10:23:52.226] PYTHON_PROGRESS: ================================================================================
+[2025-05-30 10:23:52.227] PYTHON_PROGRESS: Effective Configuration (excluding log path): {'semester_id_to_load': 1, 'cp_time_limit_seconds': 60, 'ga_population_size': 30, 'ga_generations': 50, 'ga_crossover_rate': 0.85, 'ga_mutation_rate': 0.15, 'ga_tournament_size': 5, 'ga_allow_hard_constraint_violations': False, 'priority_student_clash': 'medium', 'priority_lecturer_load_break': 'medium', 'priority_classroom_util': 'medium'}
+[2025-05-30 10:23:52.228] PYTHON_PROGRESS: Parameters Parsed: SemesterID=1, CP_Time=60.0s, GA_Pop=30, GA_Gens=50, Priorities={'student_clash': 'medium', 'lecturer_load_break': 'medium', 'classroom_util': 'medium'}, GA_Allow_HC=False
+[2025-05-30 10:23:52.228] PYTHON_PROGRESS: ================================================================================
+[2025-05-30 10:23:52.229] PYTHON_PROGRESS: =====             1. LOADING & PREPROCESSING DATA - SEMESTER: 1              =====
+[2025-05-30 10:23:52.229] PYTHON_PROGRESS: ================================================================================
+[2025-05-30 10:23:52.310] PYTHON_PROGRESS: Raw data loaded: 50 SchedClasses, 48 Instrs, 23 Rooms, 24 TSlots, 35 Studs, 55 CourseCatalog entries.
+[2025-05-30 10:23:52.313] PYTHON_PROGRESS: Data preprocessed. 50 items identified for potential scheduling.
+[2025-05-30 10:23:52.314] PYTHON_PROGRESS: ================================================================================
+[2025-05-30 10:23:52.314] PYTHON_PROGRESS: =====                2. SOLVING HARD CONSTRAINTS WITH CP-SAT                 =====
+[2025-05-30 10:23:52.315] PYTHON_PROGRESS: ================================================================================
+[2025-05-30 10:23:52.317] PYTHON_PROGRESS: CP_SAT: CP-SAT Module Initialized.
+[2025-05-30 10:23:52.318] PYTHON_PROGRESS: CP_SAT: Starting CP-SAT model solving process...
+[2025-05-30 10:23:52.319] PYTHON_PROGRESS: CP_SAT: Starting pre-filtering and variable creation...
+[2025-05-30 10:23:52.324] PYTHON_PROGRESS: CP_SAT: Pre-filter: 50 items are potentially schedulable and variables created.
+[2025-05-30 10:23:52.324] PYTHON_PROGRESS: CP_SAT: Finished pre-filtering and variable creation.
+[2025-05-30 10:23:52.324] PYTHON_PROGRESS: CP_SAT: Adding hard constraints to the model...
+[2025-05-30 10:23:52.496] PYTHON_PROGRESS: CP_SAT: Added 25 HC1 (Lecturer-Timeslot) and 1225 HC2 (Classroom-Timeslot) constraints.
+[2025-05-30 10:23:52.496] PYTHON_PROGRESS: CP_SAT: Added 0 HC3 (Instructor Unavailable Slots) constraints.
+[2025-05-30 10:23:52.496] PYTHON_PROGRESS: CP_SAT: Finished adding hard constraints.
+[2025-05-30 10:23:52.496] PYTHON_PROGRESS: CP_SAT: Time to build CP-SAT model for 50 items: 0.18s.
+[2025-05-30 10:23:52.496] PYTHON_PROGRESS: CP_SAT: Solver starting... Time limit: 60.0s. Solving for 50 items.
+[2025-05-30 10:23:53.958] PYTHON_PROGRESS: CP_SAT: Solver finished in 1.45s. Status: OPTIMAL
+[2025-05-30 10:23:53.958] PYTHON_PROGRESS: CP_SAT: Solver found a FEASIBLE or OPTIMAL solution. Extracting schedule...
+[2025-05-30 10:23:53.960] PYTHON_PROGRESS: CP_SAT: Finished processing solver results. Extracted 50 fully scheduled items.
+[2025-05-30 10:23:53.962] PYTHON_PROGRESS: CP_SAT: Successfully scheduled all 50 targeted items.
+[2025-05-30 10:23:53.964] PYTHON_PROGRESS: CP_SAT: CP-SAT model solving process ended. Returning 50 actual scheduled items.
+[2025-05-30 10:23:53.965] PYTHON_PROGRESS: CP-SAT found a solution with 50 events. CP targeted 50 events. CP Status: OPTIMAL.
+[2025-05-30 10:23:53.970] PYTHON_PROGRESS: Output data saved to: cp_intermediate_solution.json in output_data directory.
+[2025-05-30 10:23:53.972] PYTHON_PROGRESS: ================================================================================
+[2025-05-30 10:23:53.973] PYTHON_PROGRESS: =====         3. OPTIMIZING SOFT CONSTRAINTS WITH GENETIC ALGORITHM          =====
+[2025-05-30 10:23:53.974] PYTHON_PROGRESS: ================================================================================
+[2025-05-30 10:23:53.975] PYTHON_PROGRESS: GA: Initializing GeneticAlgorithmScheduler...
+[2025-05-30 10:23:53.975] PYTHON_PROGRESS: GA: GA courses_catalog_map initialized. Number of entries: 55
+[2025-05-30 10:23:53.977] PYTHON_PROGRESS: GA:   DEBUG CHECK: Problematic ID 'INS328003' IS PRESENT in self.courses_catalog (Name: Data Preparation and Visualization).
+[2025-05-30 10:23:53.978] PYTHON_PROGRESS: GA:   DEBUG CHECK: Problematic ID 'INE105102' IS PRESENT in self.courses_catalog (Name: Macroeconomics).
+[2025-05-30 10:23:53.979] PYTHON_PROGRESS: GA:   DEBUG CHECK: Problematic ID 'INS327102' IS PRESENT in self.courses_catalog (Name: International Accounting).
+[2025-05-30 10:23:53.980] PYTHON_PROGRESS: GA:   DEBUG CHECK: Problematic ID 'INS325101' IS PRESENT in self.courses_catalog (Name: Taxation).
+[2025-05-30 10:23:53.980] PYTHON_PROGRESS: GA:   DEBUG CHECK: Problematic ID 'PEC100802' IS PRESENT in self.courses_catalog (Name: Marx Leninist Political Economy).
+[2025-05-30 10:23:53.981] PYTHON_PROGRESS: GA:   DEBUG CHECK: Problematic ID 'INS303002' IS PRESENT in self.courses_catalog (Name: Financial Statement Analysis).
+[2025-05-30 10:23:53.982] PYTHON_PROGRESS: GA:   DEBUG CHECK: All previously problematic IDs checked ARE NOW PRESENT in self.courses_catalog.
+[2025-05-30 10:23:53.983] PYTHON_PROGRESS: GA: GA Initialized. PopSize=30, Gens=50, AllowHCViolations=False
+[2025-05-30 10:23:53.984] PYTHON_PROGRESS: GA: Settings: StudentClashPenalty=1000.0, LecturerOverloadPenalty=50.0, LecturerMinPeriods=4
+[2025-05-30 10:23:53.985] PYTHON_PROGRESS: GA: Attempting to initialize GA population...
+[2025-05-30 10:23:53.986] PYTHON_PROGRESS: GA: Initializing population...
+[2025-05-30 10:23:53.986] PYTHON_PROGRESS: GA: Processing 1 schedule(s) from CP input.
+[2025-05-30 10:23:53.988] PYTHON_PROGRESS: GA: Cloning 1 valid schedule(s) to reach population size 30.
+[2025-05-30 10:23:54.007] PYTHON_PROGRESS: GA: Successfully initialized population with 30 individuals.
+[2025-05-30 10:23:54.007] PYTHON_PROGRESS: GA: Evaluating initial population for GA...
+[2025-05-30 10:23:54.093] PYTHON_PROGRESS: GA: GA evolution started. PopSize: 30. Gens: 50.
+[2025-05-30 10:23:54.094] PYTHON_PROGRESS: GA: Initial best penalty: 39220.00 for sched with 50 events.
+[2025-05-30 10:23:54.209] PYTHON_PROGRESS: GA: Fitness (Total=39220.00): SC1_StudentClash=37000|SC2_LecturerUnderload=2220|
+[2025-05-30 10:23:54.237] PYTHON_PROGRESS: GA: Fitness (Total=39220.00): SC1_StudentClash=37000|SC2_LecturerUnderload=2220|
+[2025-05-30 10:23:54.256] PYTHON_PROGRESS: GA: End Gen 1/50: BestInGenPen=38220.00, OverallBestPen=38220.00
+[2025-05-30 10:23:54.326] PYTHON_PROGRESS: GA: ValidationFail HC1 (Event 34): Lect 36 conflict at TS 2 for Course INS307403
+[2025-05-30 10:23:54.346] PYTHON_PROGRESS: GA: Fitness (Total=39220.00): SC1_StudentClash=37000|SC2_LecturerUnderload=2220|
+[2025-05-30 10:23:54.416] PYTHON_PROGRESS: GA: Fitness (Total=39220.00): SC1_StudentClash=37000|SC2_LecturerUnderload=2220|
+[2025-05-30 10:23:54.515] PYTHON_PROGRESS: GA: Fitness (Total=38220.00): SC1_StudentClash=36000|SC2_LecturerUnderload=2220|
+[2025-05-30 10:23:54.614] PYTHON_PROGRESS: GA: ValidationFail HC2 (Event 43): Room 6 conflict at TS 1 for Course INS327102
+[2025-05-30 10:23:54.655] PYTHON_PROGRESS: GA: ValidationFail HC2 (Event 46): Room 20 conflict at TS 1 for Course MAT109204
+[2025-05-30 10:23:54.683] PYTHON_PROGRESS: GA: Fitness (Total=38220.00): SC1_StudentClash=36000|SC2_LecturerUnderload=2220|
+[2025-05-30 10:23:54.693] PYTHON_PROGRESS: GA: Fitness (Total=38220.00): SC1_StudentClash=36000|SC2_LecturerUnderload=2220|
+[2025-05-30 10:23:54.871] PYTHON_PROGRESS: GA: Fitness (Total=30220.00): SC1_StudentClash=28000|SC2_LecturerUnderload=2220|
+[2025-05-30 10:23:54.882] PYTHON_PROGRESS: GA: Fitness (Total=30220.00): SC1_StudentClash=28000|SC2_LecturerUnderload=2220|
+[2025-05-30 10:23:54.905] PYTHON_PROGRESS: GA: End Gen 5/50: BestInGenPen=30220.00, OverallBestPen=30220.00
+[2025-05-30 10:23:55.014] PYTHON_PROGRESS: GA: Fitness (Total=30220.00): SC1_StudentClash=28000|SC2_LecturerUnderload=2220|
+[2025-05-30 10:23:55.148] PYTHON_PROGRESS: GA: Fitness (Total=30220.00): SC1_StudentClash=28000|SC2_LecturerUnderload=2220|
+[2025-05-30 10:23:55.183] PYTHON_PROGRESS: GA: Fitness (Total=30220.00): SC1_StudentClash=28000|SC2_LecturerUnderload=2220|
+[2025-05-30 10:23:55.216] PYTHON_PROGRESS: GA: Fitness (Total=30220.00): SC1_StudentClash=28000|SC2_LecturerUnderload=2220|
+[2025-05-30 10:23:55.236] PYTHON_PROGRESS: GA: Fitness (Total=30220.00): SC1_StudentClash=28000|SC2_LecturerUnderload=2220|
+[2025-05-30 10:23:55.380] PYTHON_PROGRESS: GA: Fitness (Total=30220.00): SC1_StudentClash=28000|SC2_LecturerUnderload=2220|
+[2025-05-30 10:23:55.433] PYTHON_PROGRESS: GA: ValidationFail HC2 (Event 14): Room 1 conflict at TS 3 for Course INS201502
+[2025-05-30 10:23:55.530] PYTHON_PROGRESS: GA: Fitness (Total=30220.00): SC1_StudentClash=28000|SC2_LecturerUnderload=2220|
+[2025-05-30 10:23:55.695] PYTHON_PROGRESS: GA: Fitness (Total=30220.00): SC1_StudentClash=28000|SC2_LecturerUnderload=2220|
+[2025-05-30 10:23:55.710] PYTHON_PROGRESS: GA: End Gen 10/50: BestInGenPen=28220.00, OverallBestPen=28220.00
+[2025-05-30 10:23:55.766] PYTHON_PROGRESS: GA: ValidationFail HC2 (Event 13): Room 13 conflict at TS 2 for Course INS201501
+[2025-05-30 10:23:55.962] PYTHON_PROGRESS: GA: Fitness (Total=28220.00): SC1_StudentClash=26000|SC2_LecturerUnderload=2220|
+[2025-05-30 10:23:55.991] PYTHON_PROGRESS: GA: Fitness (Total=27220.00): SC1_StudentClash=25000|SC2_LecturerUnderload=2220|
+[2025-05-30 10:23:56.049] PYTHON_PROGRESS: GA: ValidationFail HC2 (Event 44): Room 8 conflict at TS 1 for Course INS328003
+[2025-05-30 10:23:56.072] PYTHON_PROGRESS: GA: ValidationFail HC2 (Event 17): Room 1 conflict at TS 5 for Course INS207303
+[2025-05-30 10:23:56.076] PYTHON_PROGRESS: GA: ValidationFail HC2 (Event 40): Room 14 conflict at TS 1 for Course INS323702
+[2025-05-30 10:23:56.081] PYTHON_PROGRESS: GA: ValidationFail HC2 (Event 46): Room 20 conflict at TS 1 for Course MAT109204
+[2025-05-30 10:23:56.133] PYTHON_PROGRESS: GA: Fitness (Total=22220.00): SC1_StudentClash=20000|SC2_LecturerUnderload=2220|
+[2025-05-30 10:23:56.264] PYTHON_PROGRESS: GA: ValidationFail HC2 (Event 47): Room 9 conflict at TS 1 for Course PEC100802
+[2025-05-30 10:23:56.347] PYTHON_PROGRESS: GA: Fitness (Total=22220.00): SC1_StudentClash=20000|SC2_LecturerUnderload=2220|
+[2025-05-30 10:23:56.364] PYTHON_PROGRESS: GA: Fitness (Total=24220.00): SC1_StudentClash=22000|SC2_LecturerUnderload=2220|
+[2025-05-30 10:23:56.480] PYTHON_PROGRESS: GA: Fitness (Total=18220.00): SC1_StudentClash=16000|SC2_LecturerUnderload=2220|
+[2025-05-30 10:23:56.480] PYTHON_PROGRESS: GA: Fitness (Total=22220.00): SC1_StudentClash=20000|SC2_LecturerUnderload=2220|
+[2025-05-30 10:23:56.516] PYTHON_PROGRESS: GA: Fitness (Total=22220.00): SC1_StudentClash=20000|SC2_LecturerUnderload=2220|
+[2025-05-30 10:23:56.520] PYTHON_PROGRESS: GA: End Gen 15/50: BestInGenPen=18220.00, OverallBestPen=18220.00
+[2025-05-30 10:23:56.663] PYTHON_PROGRESS: GA: Fitness (Total=21220.00): SC1_StudentClash=19000|SC2_LecturerUnderload=2220|
+[2025-05-30 10:23:56.679] PYTHON_PROGRESS: GA: Fitness (Total=21220.00): SC1_StudentClash=19000|SC2_LecturerUnderload=2220|
+[2025-05-30 10:23:56.705] PYTHON_PROGRESS: GA: ValidationFail HC2 (Event 13): Room 8 conflict at TS 2 for Course INS201501
+[2025-05-30 10:23:56.750] PYTHON_PROGRESS: GA: ValidationFail HC2 (Event 25): Room 13 conflict at TS 2 for Course INS30201
+[2025-05-30 10:23:56.750] PYTHON_PROGRESS: GA: ValidationFail HC2 (Event 13): Room 13 conflict at TS 2 for Course INS201501
+[2025-05-30 10:23:56.790] PYTHON_PROGRESS: GA: Fitness (Total=18220.00): SC1_StudentClash=16000|SC2_LecturerUnderload=2220|
+[2025-05-30 10:23:56.807] PYTHON_PROGRESS: GA: Fitness (Total=18220.00): SC1_StudentClash=16000|SC2_LecturerUnderload=2220|
+[2025-05-30 10:23:56.915] PYTHON_PROGRESS: GA: ValidationFail HC2 (Event 20): Room 14 conflict at TS 2 for Course INS210902
+[2025-05-30 10:23:56.991] PYTHON_PROGRESS: GA: Fitness (Total=18220.00): SC1_StudentClash=16000|SC2_LecturerUnderload=2220|
+[2025-05-30 10:23:57.014] PYTHON_PROGRESS: GA: Fitness (Total=18220.00): SC1_StudentClash=16000|SC2_LecturerUnderload=2220|
+[2025-05-30 10:23:57.055] PYTHON_PROGRESS: GA: ValidationFail HC2 (Event 32): Room 8 conflict at TS 1 for Course INS306603
+[2025-05-30 10:23:57.080] PYTHON_PROGRESS: GA: ValidationFail HC2 (Event 25): Room 13 conflict at TS 2 for Course INS30201
+[2025-05-30 10:23:57.116] PYTHON_PROGRESS: GA: Fitness (Total=17220.00): SC1_StudentClash=15000|SC2_LecturerUnderload=2220|
+[2025-05-30 10:23:57.207] PYTHON_PROGRESS: GA: Fitness (Total=17220.00): SC1_StudentClash=15000|SC2_LecturerUnderload=2220|
+[2025-05-30 10:23:57.310] PYTHON_PROGRESS: GA: ValidationFail HC2 (Event 25): Room 12 conflict at TS 2 for Course INS30201
+[2025-05-30 10:23:57.388] PYTHON_PROGRESS: GA: End Gen 20/50: BestInGenPen=16220.00, OverallBestPen=16220.00
+[2025-05-30 10:23:57.530] PYTHON_PROGRESS: GA: Fitness (Total=12220.00): SC1_StudentClash=10000|SC2_LecturerUnderload=2220|
+[2025-05-30 10:23:57.711] PYTHON_PROGRESS: GA: Fitness (Total=16220.00): SC1_StudentClash=14000|SC2_LecturerUnderload=2220|
+[2025-05-30 10:23:57.730] PYTHON_PROGRESS: GA: Fitness (Total=16220.00): SC1_StudentClash=14000|SC2_LecturerUnderload=2220|
+[2025-05-30 10:23:57.733] PYTHON_PROGRESS: GA: Fitness (Total=16220.00): SC1_StudentClash=14000|SC2_LecturerUnderload=2220|
+[2025-05-30 10:23:57.829] PYTHON_PROGRESS: GA: Fitness (Total=12220.00): SC1_StudentClash=10000|SC2_LecturerUnderload=2220|
+[2025-05-30 10:23:57.947] PYTHON_PROGRESS: GA: ValidationFail HC2 (Event 12): Room 1 conflict at TS 4 for Course INS201101
+[2025-05-30 10:23:58.046] PYTHON_PROGRESS: GA: Fitness (Total=12220.00): SC1_StudentClash=10000|SC2_LecturerUnderload=2220|
+[2025-05-30 10:23:58.152] PYTHON_PROGRESS: GA: ValidationFail HC2 (Event 27): Room 17 conflict at TS 2 for Course INS302901
+[2025-05-30 10:23:58.233] PYTHON_PROGRESS: GA: Fitness (Total=12220.00): SC1_StudentClash=10000|SC2_LecturerUnderload=2220|
+[2025-05-30 10:23:58.264] PYTHON_PROGRESS: GA: End Gen 25/50: BestInGenPen=12220.00, OverallBestPen=12220.00
+[2025-05-30 10:23:58.304] PYTHON_PROGRESS: GA: ValidationFail HC1 (Event 24): Lect 18 conflict at TS 6 for Course INS301603
+[2025-05-30 10:23:58.348] PYTHON_PROGRESS: GA: ValidationFail HC2 (Event 43): Room 17 conflict at TS 1 for Course INS327102
+[2025-05-30 10:23:58.383] PYTHON_PROGRESS: GA: Fitness (Total=12220.00): SC1_StudentClash=10000|SC2_LecturerUnderload=2220|
+[2025-05-30 10:23:58.415] PYTHON_PROGRESS: GA: Fitness (Total=12220.00): SC1_StudentClash=10000|SC2_LecturerUnderload=2220|
+[2025-05-30 10:23:58.437] PYTHON_PROGRESS: GA: Fitness (Total=12220.00): SC1_StudentClash=10000|SC2_LecturerUnderload=2220|
+[2025-05-30 10:23:58.501] PYTHON_PROGRESS: GA: ValidationFail HC2 (Event 20): Room 14 conflict at TS 2 for Course INS210902
+[2025-05-30 10:23:58.508] PYTHON_PROGRESS: GA: ValidationFail HC2 (Event 40): Room 8 conflict at TS 1 for Course INS323702
+[2025-05-30 10:23:58.564] PYTHON_PROGRESS: GA: Fitness (Total=12220.00): SC1_StudentClash=10000|SC2_LecturerUnderload=2220|
+[2025-05-30 10:23:58.585] PYTHON_PROGRESS: GA: Fitness (Total=12220.00): SC1_StudentClash=10000|SC2_LecturerUnderload=2220|
+[2025-05-30 10:23:58.672] PYTHON_PROGRESS: GA: ValidationFail HC2 (Event 41): Room 15 conflict at TS 3 for Course INS325101
+[2025-05-30 10:23:58.674] PYTHON_PROGRESS: GA: ValidationFail HC1 (Event 39): Lect 35 conflict at TS 2 for Course INS318901
+[2025-05-30 10:23:58.683] PYTHON_PROGRESS: GA: Fitness (Total=9220.00): SC1_StudentClash=7000|SC2_LecturerUnderload=2220|
+[2025-05-30 10:23:58.720] PYTHON_PROGRESS: GA: Fitness (Total=12220.00): SC1_StudentClash=10000|SC2_LecturerUnderload=2220|
+[2025-05-30 10:23:58.739] PYTHON_PROGRESS: GA: Fitness (Total=12220.00): SC1_StudentClash=10000|SC2_LecturerUnderload=2220|
+[2025-05-30 10:23:58.825] PYTHON_PROGRESS: GA: ValidationFail HC2 (Event 44): Room 14 conflict at TS 1 for Course INS328003
+[2025-05-30 10:23:58.873] PYTHON_PROGRESS: GA: Fitness (Total=12220.00): SC1_StudentClash=10000|SC2_LecturerUnderload=2220|
+[2025-05-30 10:23:59.097] PYTHON_PROGRESS: GA: End Gen 30/50: BestInGenPen=8220.00, OverallBestPen=8220.00
+[2025-05-30 10:23:59.179] PYTHON_PROGRESS: GA: Fitness (Total=8220.00): SC1_StudentClash=6000|SC2_LecturerUnderload=2220|
+[2025-05-30 10:23:59.188] PYTHON_PROGRESS: GA: Fitness (Total=9220.00): SC1_StudentClash=7000|SC2_LecturerUnderload=2220|
+[2025-05-30 10:23:59.331] PYTHON_PROGRESS: GA: ValidationFail HC2 (Event 9): Room 1 conflict at TS 3 for Course INE306001
+[2025-05-30 10:23:59.336] PYTHON_PROGRESS: GA: ValidationFail HC2 (Event 47): Room 8 conflict at TS 1 for Course PEC100802
+[2025-05-30 10:23:59.401] PYTHON_PROGRESS: GA: Fitness (Total=8220.00): SC1_StudentClash=6000|SC2_LecturerUnderload=2220|
+[2025-05-30 10:23:59.431] PYTHON_PROGRESS: GA: Fitness (Total=9220.00): SC1_StudentClash=7000|SC2_LecturerUnderload=2220|
+[2025-05-30 10:23:59.514] PYTHON_PROGRESS: GA: Fitness (Total=8220.00): SC1_StudentClash=6000|SC2_LecturerUnderload=2220|
+[2025-05-30 10:23:59.561] PYTHON_PROGRESS: GA: Fitness (Total=8220.00): SC1_StudentClash=6000|SC2_LecturerUnderload=2220|
+[2025-05-30 10:23:59.589] PYTHON_PROGRESS: GA: Fitness (Total=8220.00): SC1_StudentClash=6000|SC2_LecturerUnderload=2220|
+[2025-05-30 10:23:59.653] PYTHON_PROGRESS: GA: ValidationFail HC2 (Event 15): Room 1 conflict at TS 24 for Course INS201503
+[2025-05-30 10:23:59.705] PYTHON_PROGRESS: GA: Fitness (Total=7220.00): SC1_StudentClash=5000|SC2_LecturerUnderload=2220|
+[2025-05-30 10:23:59.812] PYTHON_PROGRESS: GA: ValidationFail HC2 (Event 21): Room 2 conflict at TS 7 for Course INS211102
+[2025-05-30 10:23:59.892] PYTHON_PROGRESS: GA: Fitness (Total=7220.00): SC1_StudentClash=5000|SC2_LecturerUnderload=2220|
+[2025-05-30 10:23:59.931] PYTHON_PROGRESS: GA: End Gen 35/50: BestInGenPen=6220.00, OverallBestPen=6220.00
+[2025-05-30 10:24:00.057] PYTHON_PROGRESS: GA: Fitness (Total=7220.00): SC1_StudentClash=5000|SC2_LecturerUnderload=2220|
+[2025-05-30 10:24:00.085] PYTHON_PROGRESS: GA: Fitness (Total=6220.00): SC1_StudentClash=4000|SC2_LecturerUnderload=2220|
+[2025-05-30 10:24:00.162] PYTHON_PROGRESS: GA: ValidationFail HC2 (Event 15): Room 1 conflict at TS 8 for Course INS201503
+[2025-05-30 10:24:00.182] PYTHON_PROGRESS: GA: Fitness (Total=6220.00): SC1_StudentClash=4000|SC2_LecturerUnderload=2220|
+[2025-05-30 10:24:00.186] PYTHON_PROGRESS: GA: Fitness (Total=6220.00): SC1_StudentClash=4000|SC2_LecturerUnderload=2220|
+[2025-05-30 10:24:00.313] PYTHON_PROGRESS: GA: ValidationFail HC2 (Event 27): Room 17 conflict at TS 2 for Course INS302901
+[2025-05-30 10:24:00.580] PYTHON_PROGRESS: GA: Fitness (Total=6220.00): SC1_StudentClash=4000|SC2_LecturerUnderload=2220|
+[2025-05-30 10:24:00.637] PYTHON_PROGRESS: GA: ValidationFail HC2 (Event 47): Room 21 conflict at TS 1 for Course PEC100802
+[2025-05-30 10:24:00.670] PYTHON_PROGRESS: GA: Fitness (Total=6220.00): SC1_StudentClash=4000|SC2_LecturerUnderload=2220|
+[2025-05-30 10:24:00.747] PYTHON_PROGRESS: GA: End Gen 40/50: BestInGenPen=5220.00, OverallBestPen=5220.00
+[2025-05-30 10:24:00.797] PYTHON_PROGRESS: GA: ValidationFail HC1 (Event 24): Lect 18 conflict at TS 6 for Course INS301603
+[2025-05-30 10:24:00.921] PYTHON_PROGRESS: GA: Fitness (Total=5220.00): SC1_StudentClash=3000|SC2_LecturerUnderload=2220|
+[2025-05-30 10:24:01.022] PYTHON_PROGRESS: GA: Fitness (Total=5220.00): SC1_StudentClash=3000|SC2_LecturerUnderload=2220|
+[2025-05-30 10:24:01.030] PYTHON_PROGRESS: GA: Fitness (Total=5220.00): SC1_StudentClash=3000|SC2_LecturerUnderload=2220|
+[2025-05-30 10:24:01.064] PYTHON_PROGRESS: GA: Fitness (Total=5220.00): SC1_StudentClash=3000|SC2_LecturerUnderload=2220|
+[2025-05-30 10:24:01.081] PYTHON_PROGRESS: GA: Fitness (Total=5220.00): SC1_StudentClash=3000|SC2_LecturerUnderload=2220|
+[2025-05-30 10:24:01.234] PYTHON_PROGRESS: GA: Fitness (Total=5220.00): SC1_StudentClash=3000|SC2_LecturerUnderload=2220|
+[2025-05-30 10:24:01.561] PYTHON_PROGRESS: GA: End Gen 45/50: BestInGenPen=5220.00, OverallBestPen=5220.00
+[2025-05-30 10:24:01.659] PYTHON_PROGRESS: GA: Fitness (Total=5220.00): SC1_StudentClash=3000|SC2_LecturerUnderload=2220|
+[2025-05-30 10:24:01.752] PYTHON_PROGRESS: GA: ValidationFail HC2 (Event 15): Room 1 conflict at TS 5 for Course INS201503
+[2025-05-30 10:24:01.799] PYTHON_PROGRESS: GA: ValidationFail HC2 (Event 34): Room 1 conflict at TS 4 for Course INS307403
+[2025-05-30 10:24:01.819] PYTHON_PROGRESS: GA: Fitness (Total=5220.00): SC1_StudentClash=3000|SC2_LecturerUnderload=2220|
+[2025-05-30 10:24:01.883] PYTHON_PROGRESS: GA: Fitness (Total=5220.00): SC1_StudentClash=3000|SC2_LecturerUnderload=2220|
+[2025-05-30 10:24:01.886] PYTHON_PROGRESS: GA: Fitness (Total=5220.00): SC1_StudentClash=3000|SC2_LecturerUnderload=2220|
+[2025-05-30 10:24:01.984] PYTHON_PROGRESS: GA: Fitness (Total=5220.00): SC1_StudentClash=3000|SC2_LecturerUnderload=2220|
+[2025-05-30 10:24:01.999] PYTHON_PROGRESS: GA: Fitness (Total=5220.00): SC1_StudentClash=3000|SC2_LecturerUnderload=2220|
+[2025-05-30 10:24:02.111] PYTHON_PROGRESS: GA: ValidationFail HC1 (Event 37): Lect 42 conflict at TS 17 for Course INS315101
+[2025-05-30 10:24:02.168] PYTHON_PROGRESS: GA: Fitness (Total=5220.00): SC1_StudentClash=3000|SC2_LecturerUnderload=2220|
+[2025-05-30 10:24:02.198] PYTHON_PROGRESS: GA: Fitness (Total=5220.00): SC1_StudentClash=3000|SC2_LecturerUnderload=2220|
+[2025-05-30 10:24:02.398] PYTHON_PROGRESS: GA: End Gen 50/50: BestInGenPen=4220.00, OverallBestPen=4220.00
+[2025-05-30 10:24:02.398] PYTHON_PROGRESS: GA: GA Evolution Finished. Final best penalty: 4220.00
+[2025-05-30 10:24:02.404] PYTHON_PROGRESS: GA: Detailed Metrics Calculated: {'final_penalty_score': 4220.0, 'num_scheduled_events': 50, 'hard_constraints_violated_in_final_schedule': False, 'soft_constraints_details': {'student_clash': {'count': 2, 'penalty_contribution': 2000.0}, 'lecturer_underload': {'count': 74, 'penalty_contribution': 2220.0}}}
+[2025-05-30 10:24:02.406] PYTHON_PROGRESS: GA: Num events in best GA schedule: 50
+[2025-05-30 10:24:02.408] PYTHON_PROGRESS: GA finished. Best penalty: 4220.00. Events in GA schedule: 50
+[2025-05-30 10:24:02.409] PYTHON_PROGRESS: ================================================================================
+[2025-05-30 10:24:02.410] PYTHON_PROGRESS: =====                    4. FINALIZING AND SAVING RESULTS                    =====
+[2025-05-30 10:24:02.411] PYTHON_PROGRESS: ================================================================================
+[2025-05-30 10:24:02.412] PYTHON_PROGRESS: Final Outcome: success_full_schedule_generated - Successfully scheduled all 50 targeted items. GA final penalty: 4220.00.
+[2025-05-30 10:24:02.417] PYTHON_PROGRESS: Output data saved to: final_schedule_output.json in output_data directory.
+[2025-05-30 10:24:02.419] PYTHON_PROGRESS: Total Python script execution time: 10.210 seconds.
+[2025-05-30 10:24:02.438] PYTHON_PROGRESS: Updated total execution time in final output file.
+[2025-05-30 10:24:02.439] PYTHON_PROGRESS: --- END OF PYTHON SCHEDULER SCRIPT EXECUTION ---

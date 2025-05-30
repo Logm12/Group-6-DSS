@@ -1,7 +1,7 @@
 {
     "cp_metrics": {
         "solver_status": "OPTIMAL",
-        "solve_time_seconds": 1.504,
+        "solve_time_seconds": 1.537,
         "model_build_time_seconds": 0.201,
         "num_items_initial_from_data": 50,
         "num_items_targeted_for_cp_solver": 50,
