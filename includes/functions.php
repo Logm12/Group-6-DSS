@@ -1,8 +1,5 @@
 <?php
-// htdocs/DSS/includes/functions.php
 
-// --- KHỞI TẠO SESSION NGAY ĐẦU FILE ---
-// Quan trọng: Đảm bảo không có output nào (HTML, khoảng trắng, echo) trước dòng này.
 if (session_status() == PHP_SESSION_NONE) {
     session_start();
 }
@@ -11,16 +8,14 @@ if (session_status() == PHP_SESSION_NONE) {
 if (!defined('BASE_URL')) {
     $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' || $_SERVER['SERVER_PORT'] == 443) ? "https://" : "http://";
     $host = $_SERVER['HTTP_HOST'];
-    // TUỲ CHỈNH $app_base_path CHO ĐÚNG VỚI CẤU TRÚC CỦA BẠN
-    // Ví dụ: /DSS/ nếu thư mục gốc là htdocs/DSS
-    $app_base_path = '/DSS/'; // Giả sử DSS là thư mục con trực tiếp của document root
+
+    $app_base_path = '/DSS/'; 
     
-    if ($app_base_path !== '/') { // Đảm bảo nó luôn có dấu / ở đầu và cuối nếu không phải là root
+    if ($app_base_path !== '/') { 
         $app_base_path = '/' . trim($app_base_path, '/') . '/';
     }
     define('BASE_URL', $protocol . $host . $app_base_path);
 }
-// Để debug: // echo "DEBUG: BASE_URL is defined as: " . BASE_URL; // die();
 
 // --- UTILITY FUNCTIONS ---
 
@@ -29,24 +24,20 @@ if (!defined('BASE_URL')) {
  * @param string $relative_app_path Path relative to BASE_URL (e.g., 'admin/index.php', 'login.php').
  */
 function redirect(string $relative_app_path): void {
-    $base = rtrim(BASE_URL, '/'); // Ví dụ: http://localhost/DSS
-    $path = ltrim($relative_app_path, '/'); // Ví dụ: admin/index.php
+    $base = rtrim(BASE_URL, '/');
+    $path = ltrim($relative_app_path, '/'); 
     $target_url = $base . '/' . $path;
 
-    // Further normalization to prevent multiple slashes after protocol
-    // e.g. http://localhost//DSS -> http://localhost/DSS
     if (strpos($target_url, '://') !== false) {
         list($protocol_part, $path_part_after_protocol) = explode('://', $target_url, 2);
-        // Replace multiple slashes with a single slash in the path part
         $path_part_after_protocol = preg_replace('#/{2,}#', '/', $path_part_after_protocol);
         $target_url = $protocol_part . '://' . $path_part_after_protocol;
     } else {
-        // Should not happen if BASE_URL is correctly defined with protocol and host
         $target_url = preg_replace('#/{2,}#', '/', $target_url);
     }
     
     header("Location: " . $target_url);
-    exit(); // Crucial to stop script execution after redirect
+    exit(); 
 }
 
 /**
@@ -211,6 +202,8 @@ function format_date_for_display(?string $date_string, string $format = 'd/m/Y')
 function format_time_for_display(?string $time_string, string $format = 'H:i'): string {
     if (empty($time_string) || $time_string === null) return 'N/A';
     try {
+        // MySQL TIME can be just H:i:s or can be timedelta string if very large
+        // Python model uses H:H:M:S string. Standard DateTime expects H:i or H:i:s
         $date = DateTime::createFromFormat('H:i:s', $time_string) ?: DateTime::createFromFormat('H:i', $time_string);
         return $date ? $date->format($format) : 'Invalid Time';
     } catch (Exception $e) { /* error_log("Error formatting time: {$time_string} - ".$e->getMessage()); */ return 'Invalid Time'; }
@@ -224,8 +217,8 @@ function format_time_for_display(?string $time_string, string $format = 'H:i'): 
  * @param string $value_column Column to use for option values.
  * @param string|array $text_columns Column(s) to use for option display text. If array, concatenates with ' - '.
  * @param mixed $selected_value The value that should be pre-selected.
- * @param string $condition Optional SQL WHERE condition (without "WHERE" keyword).
- * @param string $order_by Optional SQL ORDER BY clause (without "ORDER BY" keyword).
+ * @param string $condition Optional SQL WHERE condition (without "WHERE" keyword). User input for this MUST be sanitized/parameterized beforehand.
+ * @param string $order_by Optional SQL ORDER BY clause (without "ORDER BY" keyword). User input for this MUST be sanitized beforehand.
  * @param string $default_option_text Text for the default unselected option (e.g., "-- Select --").
  * @return string HTML string of <option> tags.
  */
@@ -237,14 +230,13 @@ function generate_select_options(
     mixed $selected_value = null, 
     string $condition = "", 
     string $order_by = "", 
-    string $default_option_text = "-- Select Options --" // Changed default
+    string $default_option_text = "-- Select Options --"
 ): string {
     $options_html = '';
     if (!empty($default_option_text)) { 
         $options_html .= "<option value=''>" . htmlspecialchars($default_option_text) . "</option>"; 
     }
 
-    // Basic sanitization for table and column names to prevent simple SQL injection via these parameters
     $safe_table_name = "`" . preg_replace('/[^a-zA-Z0-9_]/', '', $table_name) . "`";
     $safe_value_column = "`" . preg_replace('/[^a-zA-Z0-9_]/', '', $value_column) . "`";
     
@@ -256,45 +248,55 @@ function generate_select_options(
     } else {
         $safe_text_column_parts[] = "`" . preg_replace('/[^a-zA-Z0-9_]/', '', (string)$text_columns) . "`";
     }
-    $display_text_sql = "CONCAT_WS(' - ', " . implode(", ", $safe_text_column_parts) . ")";
+    // Use alias for DisplayText to avoid issues if text_columns is a single complex expression
+    $display_text_sql = "CONCAT_WS(' - ', " . implode(", ", $safe_text_column_parts) . ") AS DisplayText";
     
-    $sql = "SELECT {$safe_value_column}, {$display_text_sql} AS DisplayText FROM {$safe_table_name}";
+    $sql = "SELECT {$safe_value_column}, {$display_text_sql} FROM {$safe_table_name}";
     
-    // IMPORTANT: $condition and $order_by are NOT sanitized here. 
-    // They MUST be constructed safely or use prepared statements if they ever involve user input.
-    // For admin-defined conditions/order_by from code, this might be acceptable.
-    if (!empty($condition)) { $sql .= " WHERE " . $condition; }
-    if (!empty($order_by)) { $sql .= " ORDER BY " . $order_by; }
+    // WARNING: $condition and $order_by are directly concatenated. 
+    // They MUST be constructed from trusted sources or use prepared statements if they involve user input.
+    if (!empty($condition)) { $sql .= " WHERE " . $condition; } // $condition MUST be safe
+    if (!empty($order_by)) { $sql .= " ORDER BY " . $order_by; } // $order_by MUST be safe
 
-    $result = $conn->query($sql);
-    if ($result) {
+    $stmt = $conn->prepare($sql); // Try to prepare at least the main part
+    if (!$stmt) {
+        error_log("Error preparing statement in generate_select_options for table '{$table_name}': " . $conn->error . " | SQL Attempted: " . $sql);
+        return $options_html . "<option value=''>Error loading options</option>";
+    }
+
+    if ($stmt->execute()) {
+        $result = $stmt->get_result();
         if ($result->num_rows > 0) {
             while ($row = $result->fetch_assoc()) {
-                // Use original column name for value, which might be different from safe_value_column if it had special chars
-                $original_value_col_name = preg_replace('/[^a-zA-Z0-9_]/', '', $value_column); 
-                $option_val = htmlspecialchars((string)$row[$original_value_col_name]);
-                $option_text = htmlspecialchars((string)$row['DisplayText']);
-                $selected_attr = ($selected_value !== null && (string)$selected_value === $option_val) ? 'selected' : '';
-                $options_html .= "<option value='{$option_val}' {$selected_attr}>{$option_text}</option>";
+                // Use the actual value column name as fetched
+                $option_val_raw = $row[preg_replace('/[^a-zA-Z0-9_]/', '', $value_column)];
+                $option_val_escaped = htmlspecialchars((string)$option_val_raw);
+                $option_text_escaped = htmlspecialchars((string)$row['DisplayText']);
+                $selected_attr = ($selected_value !== null && (string)$selected_value === (string)$option_val_raw) ? 'selected' : '';
+                $options_html .= "<option value='{$option_val_escaped}' {$selected_attr}>{$option_text_escaped}</option>";
             }
         }
         $result->free();
-    } else { 
-        error_log("Error in generate_select_options for table '{$table_name}': " . $conn->error . " | SQL Attempted: " . $sql);
+    } else {
+         error_log("Error executing statement in generate_select_options for table '{$table_name}': " . $stmt->error . " | SQL: " . $sql);
     }
+    $stmt->close();
     return $options_html;
 }
 
 // --- APPLICATION SPECIFIC FUNCTIONS ---
-function get_english_day_of_week(string $day_of_week_vietnamese): string { // Changed to get English name
+function get_english_day_of_week(string $day_of_week_vietnamese): string {
     $days_map = [
         'Thứ Hai' => 'Monday', 'Thứ Ba' => 'Tuesday', 'Thứ Tư' => 'Wednesday',
-        'Thứ Năm' => 'Thursday', 'Thứ Sáu' => 'Friday', 'Thứ Bảy' => 'Saturday', 'Chủ Nhật' => 'Sunday'
+        'Thứ Năm' => 'Thursday', 'Thứ Sáu' => 'Friday', 'Thứ Bảy' => 'Saturday', 'Chủ Nhật' => 'Sunday',
+        // Add English to English mapping in case input is already English
+        'Monday' => 'Monday', 'Tuesday' => 'Tuesday', 'Wednesday' => 'Wednesday',
+        'Thursday' => 'Thursday', 'Friday' => 'Friday', 'Saturday' => 'Saturday', 'Sunday' => 'Sunday',
     ];
-    return $days_map[$day_of_week_vietnamese] ?? $day_of_week_vietnamese; // Return original if not found
+    return $days_map[$day_of_week_vietnamese] ?? $day_of_week_vietnamese; 
 }
 
-function get_time_slot_display_string(string $startTimeStr, string $endTimeStr): string { // Changed name for clarity
+function get_time_slot_display_string(string $startTimeStr, string $endTimeStr): string { 
     if (empty($startTimeStr) || empty($endTimeStr)) return 'N/A';
     try {
         $start = new DateTime($startTimeStr);
@@ -305,103 +307,258 @@ function get_time_slot_display_string(string $startTimeStr, string $endTimeStr):
     }
 }
 
-// Placeholder/Example for other functions you mentioned were "giữ nguyên"
-// You will need to implement their actual logic.
-function check_class_overlap_detailed($class1_details, $class2_details): bool { 
-    // Placeholder: Implement actual overlap checking logic
-    // This would involve comparing $class1_details['timeslot_id_db'], $class1_details['lecturer_id_db'], $class1_details['classroom_id_db']
-    // with $class2_details respectively.
-    // For now, assume no overlap for simplicity in this placeholder.
+/**
+ * Checks if two class sections (for the same student) overlap in time.
+ * Assumes $class1_details and $class2_details are arrays/objects
+ * containing at least 'timeslot_id_db'.
+ * @param array $class1_details Details of the first class section.
+ * @param array $class2_details Details of the second class section.
+ * @return bool True if they overlap in time, False otherwise.
+ */
+function check_class_overlap_detailed(array $class1_details, array $class2_details): bool {
+    // For generating a single student's schedule, an overlap occurs if two
+    // chosen class sections fall into the exact same timeslot.
+    // The main Python solver handles lecturer/classroom clashes.
+    if (isset($class1_details['timeslot_id_db']) && isset($class2_details['timeslot_id_db'])) {
+        return $class1_details['timeslot_id_db'] === $class2_details['timeslot_id_db'];
+    }
+    // If timeslot information is missing, assume no overlap to be safe, or handle error
+    trigger_error("check_class_overlap_detailed: Missing 'timeslot_id_db' in class details.", E_USER_WARNING);
     return false; 
 } 
+
+/**
+ * Counts the number of distinct days present in a given schedule.
+ * @param array $schedule An array of scheduled events, each event must have 'timeslot_id_db'.
+ * @param mysqli $conn Database connection object.
+ * @return int Number of distinct days.
+ */
 function count_distinct_days_in_schedule(array $schedule, mysqli $conn): int {
     if (empty($schedule)) return 0;
-    $day_of_weeks = [];
-    foreach($schedule as $event) {
-        if(isset($event['timeslot_id_db'])) {
-            $stmt = $conn->prepare("SELECT DayOfWeek FROM TimeSlots WHERE TimeSlotID = ?");
-            if($stmt){
-                $stmt->bind_param("i", $event['timeslot_id_db']);
-                $stmt->execute();
-                $res = $stmt->get_result();
-                if($row = $res->fetch_assoc()){
-                    $day_of_weeks[] = $row['DayOfWeek'];
-                }
-                $stmt->close();
+    
+    $timeslot_ids = [];
+    foreach ($schedule as $event) {
+        if (isset($event['timeslot_id_db']) && is_numeric($event['timeslot_id_db'])) {
+            $timeslot_ids[] = (int)$event['timeslot_id_db'];
+        }
+    }
+
+    if (empty($timeslot_ids)) return 0;
+
+    $unique_timeslot_ids = array_unique($timeslot_ids);
+    $placeholders = implode(',', array_fill(0, count($unique_timeslot_ids), '?'));
+    $types = str_repeat('i', count($unique_timeslot_ids));
+
+    $sql = "SELECT DISTINCT DayOfWeek FROM TimeSlots WHERE TimeSlotID IN ($placeholders)";
+    $stmt = $conn->prepare($sql);
+
+    if (!$stmt) {
+        error_log("count_distinct_days_in_schedule: Prepare failed: " . $conn->error);
+        return 0; // Or throw an exception
+    }
+
+    $stmt->bind_param($types, ...$unique_timeslot_ids);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    
+    $distinct_days = [];
+    while ($row = $result->fetch_assoc()) {
+        $distinct_days[] = $row['DayOfWeek'];
+    }
+    
+    $stmt->close();
+    return count(array_unique($distinct_days));
+} 
+
+/**
+ * Calculates the total gap time (in minutes) for a schedule, grouped by DayOfWeek.
+ * Assumes the $schedule is for a single entity (e.g., one student or one lecturer).
+ * @param array $schedule An array of scheduled events, each with 'timeslot_id_db'.
+ * @param mysqli $conn Database connection object.
+ * @return array Associative array with DayOfWeek as key and total gap minutes as value.
+ */
+function calculate_total_gap_time_by_dow(array $schedule, mysqli $conn): array { 
+    if (empty($schedule)) return [];
+
+    $timeslot_ids = [];
+    foreach ($schedule as $event) {
+        if (isset($event['timeslot_id_db']) && is_numeric($event['timeslot_id_db'])) {
+            $timeslot_ids[] = (int)$event['timeslot_id_db'];
+        }
+    }
+    if (empty($timeslot_ids)) return [];
+
+    $unique_timeslot_ids = array_unique($timeslot_ids);
+    $placeholders = implode(',', array_fill(0, count($unique_timeslot_ids), '?'));
+    $types = str_repeat('i', count($unique_timeslot_ids));
+
+    $sql = "SELECT TimeSlotID, DayOfWeek, StartTime, EndTime FROM TimeSlots WHERE TimeSlotID IN ($placeholders)";
+    $stmt = $conn->prepare($sql);
+    if (!$stmt) {
+        error_log("calculate_total_gap_time_by_dow: Prepare failed: " . $conn->error);
+        return [];
+    }
+    $stmt->bind_param($types, ...$unique_timeslot_ids);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    
+    $slots_data = [];
+    while ($row = $result->fetch_assoc()) {
+        $slots_data[$row['TimeSlotID']] = [
+            'DayOfWeek' => $row['DayOfWeek'],
+            'StartTime' => new DateTime($row['StartTime']),
+            'EndTime'   => new DateTime($row['EndTime'])
+        ];
+    }
+    $stmt->close();
+
+    $events_by_day = [];
+    foreach ($schedule as $event) {
+        if (isset($event['timeslot_id_db']) && isset($slots_data[$event['timeslot_id_db']])) {
+            $slot_info = $slots_data[$event['timeslot_id_db']];
+            $events_by_day[$slot_info['DayOfWeek']][] = $slot_info;
+        }
+    }
+
+    $gap_times_by_day = [];
+    foreach ($events_by_day as $day => $day_events) {
+        if (count($day_events) < 2) {
+            $gap_times_by_day[$day] = 0;
+            continue;
+        }
+
+        // Sort events by StartTime
+        usort($day_events, function ($a, $b) {
+            return $a['StartTime'] <=> $b['StartTime'];
+        });
+
+        $total_daily_gap = 0;
+        for ($i = 0; $i < count($day_events) - 1; $i++) {
+            $event1_end = $day_events[$i]['EndTime'];
+            $event2_start = $day_events[$i+1]['StartTime'];
+            if ($event2_start > $event1_end) { // Ensure there is a gap
+                $interval = $event1_end->diff($event2_start);
+                $gap_minutes = ($interval->h * 60) + $interval->i;
+                $total_daily_gap += $gap_minutes;
+            }
+        }
+        $gap_times_by_day[$day] = $total_daily_gap;
+    }
+    return $gap_times_by_day;
+} 
+
+/**
+ * Selects the "best" schedule for a student from a list of possible schedules.
+ * "Best" is defined as: fewest distinct days, then least total gap time.
+ * @param array $schedules Array of schedule candidates. Each schedule is an array of events.
+ * @param mysqli $conn Database connection object.
+ * @return array|null The best schedule found, or null if no schedules provided.
+ */
+function select_best_schedule_for_student(array $schedules, mysqli $conn): ?array { 
+    if (empty($schedules)) return null;
+
+    $best_schedule = null;
+    $min_distinct_days = PHP_INT_MAX;
+    $min_total_gap_at_min_days = PHP_INT_MAX;
+
+    foreach ($schedules as $current_schedule) {
+        if (empty($current_schedule)) continue;
+
+        $distinct_days = count_distinct_days_in_schedule($current_schedule, $conn);
+        $gap_times_by_dow = calculate_total_gap_time_by_dow($current_schedule, $conn);
+        $total_gap_time = array_sum($gap_times_by_dow);
+
+        if ($distinct_days < $min_distinct_days) {
+            $min_distinct_days = $distinct_days;
+            $min_total_gap_at_min_days = $total_gap_time;
+            $best_schedule = $current_schedule;
+        } elseif ($distinct_days === $min_distinct_days) {
+            if ($total_gap_time < $min_total_gap_at_min_days) {
+                $min_total_gap_at_min_days = $total_gap_time;
+                $best_schedule = $current_schedule;
             }
         }
     }
-    return count(array_unique($day_of_weeks));
+    return $best_schedule; 
 } 
-function calculate_total_gap_time_by_dow(array $schedule, mysqli $conn): array { 
-    // Placeholder: Implement logic to calculate gap times
-    // This is a complex function that would need to:
-    // 1. Group scheduled classes by day for each student/lecturer.
-    // 2. Sort classes within each day by start time.
-    // 3. Calculate time difference between end of one class and start of the next.
-    // 4. Sum up these gaps.
-    return ['Monday' => 0, 'Tuesday' => 0]; // Example structure
-} 
-function select_best_schedule_for_student(array $schedules): ?array { 
-    // Placeholder: Implement logic to select the "best" schedule from a list
-    // This could be based on fewest clashes, preferred times, etc.
-    return $schedules[0] ?? null; 
-} 
+
+/**
+ * Generates all possible valid (non-clashing for the student) schedules.
+ * @param mysqli $conn DB connection.
+ * @param array $courses_with_their_class_options e.g., ['CourseID1' => [class_optionA, class_optionB], ...]
+ *                                                Each class_option is an array ['schedule_db_id' => ..., 'course_id_str' => ..., 'timeslot_id_db' => ...]
+ * @param array $current_schedule Accumulator for the current schedule being built.
+ * @param int $course_idx Index of the current course being processed from $course_ids_to_process.
+ * @param array &$all_valid_schedules Reference to array to store all valid schedules found.
+ * @param array|null $course_ids_to_process Array of CourseIDs to iterate through. Initialized if null.
+ */
 function generate_possible_schedules_for_student(
-    mysqli $conn, /* Add $conn */
+    mysqli $conn, 
     array $courses_with_their_class_options, 
     array $current_schedule = [], 
     int $course_idx = 0, 
     array &$all_valid_schedules = [], 
     ?array $course_ids_to_process = null
 ): void { 
-    // Placeholder: This is a very complex recursive/backtracking function.
-    // Its full implementation is beyond a simple fix here.
-    // It would iterate through course_ids_to_process.
-    // For each course, iterate through its available class_options (sections).
-    // Add a section to current_schedule.
-    // Check for validity (no clashes with existing items in current_schedule).
-    // If valid, recurse for the next course.
-    // If all courses processed, add current_schedule to all_valid_schedules.
-    // Backtrack by removing the last added section and trying another option.
     if ($course_ids_to_process === null) { // Initialize on first call
         $course_ids_to_process = array_keys($courses_with_their_class_options);
     }
 
+    // Base case: all courses have been considered
     if ($course_idx == count($course_ids_to_process)) {
         if (!empty($current_schedule)) { // Only add non-empty valid schedules
-            $all_valid_schedules[] = $current_schedule;
+            // Ensure the schedule is internally consistent (no self-clashes) before adding
+            // This check is somewhat redundant if check_class_overlap_detailed is robustly used during building
+            $is_final_schedule_valid = true;
+            for ($i = 0; $i < count($current_schedule); $i++) {
+                for ($j = $i + 1; $j < count($current_schedule); $j++) {
+                    if (check_class_overlap_detailed($current_schedule[$i], $current_schedule[$j])) {
+                        $is_final_schedule_valid = false;
+                        break 2;
+                    }
+                }
+            }
+            if ($is_final_schedule_valid) {
+                $all_valid_schedules[] = $current_schedule;
+            }
         }
         return;
     }
 
     $current_course_id = $course_ids_to_process[$course_idx];
-    if (!isset($courses_with_their_class_options[$current_course_id])) {
-        // Skip if this course has no options or data error
-        generate_possible_schedules_for_student($conn, $courses_with_their_class_options, $current_schedule, $course_idx + 1, $all_valid_schedules, $course_ids_to_process);
-        return;
-    }
     
-    // Try scheduling this course
-    foreach ($courses_with_their_class_options[$current_course_id] as $class_option) {
-        $temp_schedule = array_merge($current_schedule, [$class_option]); // Add current option
-        // Simplified validity check: no direct time clashes for this student with other classes in temp_schedule
-        // A real check_class_overlap_detailed would be more robust.
-        $is_currently_valid = true;
-        if (count($temp_schedule) > 1) {
-            for ($i = 0; $i < count($temp_schedule) - 1; $i++) {
-                if (check_class_overlap_detailed($temp_schedule[$i], $class_option)){ // Check against the newly added class
-                    $is_currently_valid = false;
+    // Case 1: Try scheduling the current course
+    if (isset($courses_with_their_class_options[$current_course_id]) && !empty($courses_with_their_class_options[$current_course_id])) {
+        foreach ($courses_with_their_class_options[$current_course_id] as $class_option) {
+            // A class option must have 'timeslot_id_db' to be valid for overlap checking
+            if (!isset($class_option['timeslot_id_db'])) {
+                trigger_error("generate_possible_schedules_for_student: class_option for course {$current_course_id} is missing 'timeslot_id_db'.", E_USER_WARNING);
+                continue; 
+            }
+
+            $can_add_option = true;
+            // Check if this class_option clashes with anything already in current_schedule
+            foreach ($current_schedule as $existing_class_in_schedule) {
+                if (check_class_overlap_detailed($existing_class_in_schedule, $class_option)) {
+                    $can_add_option = false;
                     break;
                 }
             }
-        }
 
-        if ($is_currently_valid) {
-            generate_possible_schedules_for_student($conn, $courses_with_their_class_options, $temp_schedule, $course_idx + 1, $all_valid_schedules, $course_ids_to_process);
+            if ($can_add_option) {
+                $new_schedule_with_option = array_merge($current_schedule, [$class_option]);
+                generate_possible_schedules_for_student($conn, $courses_with_their_class_options, $new_schedule_with_option, $course_idx + 1, $all_valid_schedules, $course_ids_to_process);
+            }
         }
+    } else {
+        // If the course has no options, or is not in the list (should not happen if $course_ids_to_process is from keys)
+        // we must proceed to the next course without adding anything for this one.
+        generate_possible_schedules_for_student($conn, $courses_with_their_class_options, $current_schedule, $course_idx + 1, $all_valid_schedules, $course_ids_to_process);
     }
-    // Option: also consider not taking this course (if courses are optional)
+
+    // Case 2: (Optional, if courses are not mandatory) Skip the current course and move to the next.
+    // For university scheduling, usually all registered courses are mandatory.
+    // If a student *can* choose to not schedule a registered course, this branch would be uncommented.
     // generate_possible_schedules_for_student($conn, $courses_with_their_class_options, $current_schedule, $course_idx + 1, $all_valid_schedules, $course_ids_to_process);
 } 
 
@@ -410,6 +567,7 @@ function selected_if_match($current_value, $option_value): void {
 }
 
 // --- PYTHON SCRIPT EXECUTION FUNCTION --- 
+// (Giữ nguyên hàm call_python_scheduler như đã cung cấp)
 function call_python_scheduler(string $python_executable, string $python_script_absolute_path, string $input_json_content, string $python_input_filename, string $python_output_filename, int $timeout_seconds = 360 ): array {
     $result = ['status' => 'error_php_setup', 'message' => 'PHP Error: Initial setup for Python execution failed.', 'data' => null, 'debug_stdout' => '', 'debug_stderr' => ''];
     if (empty(trim($python_executable))) { $result['message'] = "PHP Error: Python executable path is not configured."; return $result; }
@@ -423,7 +581,7 @@ function call_python_scheduler(string $python_executable, string $python_script_
     $input_file_for_python_abs = $python_input_dir_absolute . DIRECTORY_SEPARATOR . $python_input_filename; $output_file_from_python_abs = $python_output_dir_absolute . DIRECTORY_SEPARATOR . $python_output_filename;
     if (file_put_contents($input_file_for_python_abs, $input_json_content) === false) { $result['message'] = "PHP Error: Could not write to Python input file: " . htmlspecialchars($input_file_for_python_abs); return $result; }
     if (file_exists($output_file_from_python_abs)) { @unlink($output_file_from_python_abs); }
-    $command = escapeshellcmd($python_executable) . ' ' . escapeshellarg($python_script_absolute_path);
+    $command = escapeshellcmd($python_executable) . ' ' . escapeshellarg($python_script_absolute_path) . ' ' . escapeshellarg($python_input_filename); // Truyền tên file input
     $descriptorspec = [0 => ["pipe", "r"], 1 => ["pipe", "w"], 2 => ["pipe", "w"]]; $pipes = [];
     $process = @proc_open($command, $descriptorspec, $pipes, $python_script_dir, null);
     $stdout_content = ''; $stderr_content = ''; $start_exec_time = microtime(true);
@@ -455,4 +613,5 @@ function call_python_scheduler(string $python_executable, string $python_script_
     } else { $result['message'] = "PHP Error: Could not execute Python script (proc_open failed). Check PHP config/permissions. Cmd: " . htmlspecialchars($command); $result['status'] = 'error_php_proc_open'; }
     return $result;
 }
+
 ?>
