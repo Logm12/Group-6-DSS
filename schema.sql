@@ -208,59 +208,67 @@ CREATE TABLE `scheduledclasses` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
--- Đang đổ dữ liệu cho bảng `scheduledclasses` (với TimeSlotID đã ánh xạ sang ca chuẩn)
 --
-INSERT INTO `scheduledclasses` (`ScheduleID`, `CourseID`, `LecturerID`, `ClassroomID`, `TimeSlotID`, `SemesterID`) VALUES
-(113, 'BSA105501', 33, 5, 9, 1),      -- OldTSID 14 (Wed, 07:00) -> Ca 1 (Wed) -> NewTSID 9
-(114, 'BSA301201', 18, 21, 17, 1),    -- OldTSID 24 (Fri, 07:00) -> Ca 1 (Fri) -> NewTSID 17
-(115, 'BSA301202', 35, 2, 10, 1),     -- OldTSID 3 (Wed, 09:50) -> Ca 2 (Wed) -> NewTSID 10
-(116, 'BSA301402', 3, 22, 13, 1),     -- OldTSID 6 (Thu, 07:00) -> Ca 1 (Thu) -> NewTSID 13
-(117, 'FIB300501', 26, 21, 6, 1),     -- OldTSID 2 (Tue, 09:50) -> Ca 2 (Tue) -> NewTSID 6
-(118, 'INE105001', 20, 18, 18, 1),    -- OldTSID 27 (Fri, 09:50) -> Ca 2 (Fri) -> NewTSID 18
-(119, 'INE105002', 36, 9, 10, 1),     -- OldTSID 3 (Wed, 09:50) -> Ca 2 (Wed) -> NewTSID 10
-(120, 'INE105102', 24, 20, 9, 1),     -- OldTSID 14 (Wed, 07:00) -> Ca 1 (Wed) -> NewTSID 9
-(121, 'INE300901', 22, 17, 18, 1),    -- OldTSID 27 (Fri, 09:50) -> Ca 2 (Fri) -> NewTSID 18
-(122, 'INE306001', 4, 22, 6, 1),      -- OldTSID 23 (Tue, 09:50) -> Ca 2 (Tue) -> NewTSID 6
-(123, 'INS109101', 21, 4, 1, 1),      -- OldTSID 16 (Mon, 07:00) -> Ca 1 (Mon) -> NewTSID 1
-(124, 'INS200903', 18, 2, 5, 1),      -- OldTSID 1 (Tue, 07:00) -> Ca 1 (Tue) -> NewTSID 5
-(125, 'INS201101', 28, 4, 10, 1),     -- OldTSID 3 (Wed, 09:50) -> Ca 2 (Wed) -> NewTSID 10
-(126, 'INS201501', 37, 7, 6, 1),      -- OldTSID 23 (Tue, 09:50) -> Ca 2 (Tue) -> NewTSID 6
-(127, 'INS201502', 45, 23, 14, 1),    -- OldTSID 4 (Thu, 09:50) -> Ca 2 (Thu) -> NewTSID 14
-(128, 'INS201503', 2, 8, 13, 1),      -- OldTSID 6 (Thu, 07:00) -> Ca 1 (Thu) -> NewTSID 13
-(130, 'INS203702', 26, 19, 18, 1),    -- OldTSID 27 (Fri, 09:50) -> Ca 2 (Fri) -> NewTSID 18
-(131, 'INS207303', 12, 22, 14, 1),    -- OldTSID 4 (Thu, 09:50) -> Ca 2 (Thu) -> NewTSID 14
-(132, 'INS207402', 10, 3, 2, 1),      -- OldTSID 19 (Mon, 09:50) -> Ca 2 (Mon) -> NewTSID 2
-(133, 'INS209801', 19, 21, 1, 1),     -- OldTSID 5 (Mon, 07:00) -> Ca 1 (Mon) -> NewTSID 1
-(135, 'INS210902', 19, 4, 17, 1),     -- OldTSID 24 (Fri, 07:00) -> Ca 1 (Fri) -> NewTSID 17
-(136, 'INS211102', 9, 3, 14, 1),      -- OldTSID 4 (Thu, 09:50) -> Ca 2 (Thu) -> NewTSID 14
-(137, 'INS300202', 18, 22, 1, 1),     -- OldTSID 16 (Mon, 07:00) -> Ca 1 (Mon) -> NewTSID 1
-(138, 'INS301601', 25, 12, 2, 1),     -- OldTSID 19 (Mon, 09:50) -> Ca 2 (Mon) -> NewTSID 2
-(139, 'INS301603', 18, 2, 14, 1),     -- OldTSID 4 (Thu, 09:50) -> Ca 2 (Thu) -> NewTSID 14
-(140, 'INS30201', 42, 15, 1, 1),      -- OldTSID 5 (Mon, 07:00) -> Ca 1 (Mon) -> NewTSID 1
-(142, 'INS302803', 32, 15, 2, 1),     -- OldTSID 19 (Mon, 09:50) -> Ca 2 (Mon) -> NewTSID 2
-(143, 'INS302901', 38, 7, 17, 1),     -- OldTSID 24 (Fri, 07:00) -> Ca 1 (Fri) -> NewTSID 17
-(144, 'INS303002', 7, 8, 5, 1),       -- OldTSID 1 (Tue, 07:00) -> Ca 1 (Tue) -> NewTSID 5
-(145, 'INS303201', 32, 4, 5, 1),      -- OldTSID 1 (Tue, 07:00) -> Ca 1 (Tue) -> NewTSID 5
-(146, 'INS304901', 29, 23, 13, 1),    -- OldTSID 21 (Thu, 07:00) -> Ca 1 (Thu) -> NewTSID 13
-(147, 'INS306002', 43, 4, 18, 1),     -- OldTSID 27 (Fri, 09:50) -> Ca 2 (Fri) -> NewTSID 18
-(148, 'INS306603', 21, 9, 17, 1),     -- OldTSID 24 (Fri, 07:00) -> Ca 1 (Fri) -> NewTSID 17
-(149, 'INS306901', 44, 1, 10, 1),     -- OldTSID 3 (Wed, 09:50) -> Ca 2 (Wed) -> NewTSID 10
-(150, 'INS307403', 36, 14, 17, 1),    -- OldTSID 24 (Fri, 07:00) -> Ca 1 (Fri) -> NewTSID 17
-(151, 'INS308001', 39, 13, 6, 1),     -- OldTSID 2 (Tue, 09:50) -> Ca 2 (Tue) -> NewTSID 6
-(152, 'INS309701', 22, 2, 6, 1),      -- OldTSID 23 (Tue, 09:50) -> Ca 2 (Tue) -> NewTSID 6
-(153, 'INS315101', 42, 2, 6, 1),      -- OldTSID 2 (Tue, 09:50) -> Ca 2 (Tue) -> NewTSID 6
-(154, 'INS315201', 4, 23, 9, 1),      -- OldTSID 14 (Wed, 07:00) -> Ca 1 (Wed) -> NewTSID 9
-(155, 'INS318901', 35, 17, 2, 1),     -- OldTSID 19 (Mon, 09:50) -> Ca 2 (Mon) -> NewTSID 2
-(156, 'INS323702', 19, 5, 13, 1),     -- OldTSID 6 (Thu, 07:00) -> Ca 1 (Thu) -> NewTSID 13
-(158, 'INS325101', 7, 8, 17, 1),      -- OldTSID 24 (Fri, 07:00) -> Ca 1 (Fri) -> NewTSID 17
-(159, 'INS325201', 6, 6, 2, 1),       -- OldTSID 19 (Mon, 09:50) -> Ca 2 (Mon) -> NewTSID 2
-(161, 'INS327102', 38, 12, 5, 1),     -- OldTSID 1 (Tue, 07:00) -> Ca 1 (Tue) -> NewTSID 5
-(162, 'INS328003', 5, 14, 18, 1),     -- OldTSID 27 (Fri, 09:50) -> Ca 2 (Fri) -> NewTSID 18
-(163, 'MAT100501', 48, 20, 6, 1),     -- OldTSID 23 (Tue, 09:50) -> Ca 2 (Tue) -> NewTSID 6
-(164, 'MAT109204', 22, 10, 1, 1),     -- OldTSID 16 (Mon, 07:00) -> Ca 1 (Mon) -> NewTSID 1
-(165, 'PEC100802', 33, 21, 6, 1),     -- OldTSID 17 (Tue, 09:50) -> Ca 2 (Tue) -> NewTSID 6
-(166, 'PHI100201', 37, 10, 13, 1),    -- OldTSID 18 (Thu, 07:55) -> Ca 1 (Thu) -> NewTSID 13
-(167, 'RUS500201', 4, 22, 17, 1);     -- OldTSID 24 (Fri, 07:00) -> Ca 1 (Fri) -> NewTSID 17
+INSERT INTO ScheduledClasses (CourseID, LecturerID, ClassroomID, TimeSlotID, SemesterID, NumStudents) VALUES
+('INS308001', 1, 1, 5, 1, 45),   -- Artificial Intelligence, Truong Cong Doan, Room 407, Tue, 07:00-09:40
+('INS306002', 2, 2, 6, 1, 45),   -- Advanced Database Development, Pham Van Dai, Room 406, Tue, 09:50-12:30
+('INS306901', 3, 3, 10, 1, 45),  -- Decision Support Systems, Michael Omar, Room 504, Wed, 09:50-12:30
+('INS307403', 3, 4, 14, 1, 45),  -- Global Information Systems, Michael Omar, Room 507, Thu, 09:50-12:30
+('MAT100501', 4, 5, 1, 1, 45),   -- Mathematical Economics, Nguyen Tat Thang, Room 604, Mon, 07:00-09:40
+('INS30201', 5, 6, 5, 1, 45),   -- Global Supply Chain Management, Ho Nguyen Nhu Y, Room 403, Tue, 07:00-09:40
+('INS203702', 6, 7, 13, 1, 45),  -- Information Systems and Business Processes, Hoang Trong Tien, Room 514, Thu, 07:00-09:40
+('PHI100201', 7, 8, 15, 1, 45),  -- Scientific Socialism, Nguyen Thi Hanh, Room 512, Thu, 13:00-15:40
+('INS302203', 8, 9, 19, 1, 45),  -- International Business Law, Ngo Trong Quan, Room 506, Fri, 13:00-15:40
+('BSA301201', 9, 10, 20, 1, 45), -- Marketing Research, Bui My Trinh, Room 402, Fri, 15:50-18:30
+('INS300202', 10, 11, 19, 1, 45), -- Financial Accounting 2, Tran The Nu, Room 503, Fri, 13:00-15:40
+('INS323703', 11, 12, 10, 1, 45), -- Electric Motors and Drive Systems, Nguyen Van Tinh, Room 501, Wed, 09:50-12:30
+('INS315101', 12, 6, 13, 1, 45),  -- Embedded Control Systems, Nguyen Hoang Dung, Room 403, Thu, 07:00-09:40
+('INS207303', 13, 13, 5, 1, 45),  -- Programming 2, Nguyen Doan Dong, Room 409, Tue, 07:00-09:40
+('RUS500201', 14, 14, 8, 1, 45),  -- Russian Language 1B, Nguyen Manh Hai, Room 601, Tue, 15:50-18:30
+('INS207402', 15, 12, 12, 1, 45), -- Discrete Mathematics, Do Van Hoan, Room 501, Wed, 15:50-18:30
+('MAT109204', 16, 5, 3, 1, 45),   -- Advanced Mathematics, Phong Thi Thu Huyen, Room 604, Mon, 13:00-15:40
+('INS201101', 17, 2, 13, 1, 45),  -- Economic Law, Tran Duc Phu, Room 406, Thu, 07:00-09:40
+('INS211102', 18, 15, 6, 1, 45),  -- Business Organization and Management, Nguyen Thi Kim Duyen, Room 405, Tue, 09:50-12:30
+('INS327102', 19, 16, 9, 1, 45),  -- International Accounting, Hoang Ha Anh, Room 606, Wed, 07:00-09:40
+('INS201501', 20, 2, 16, 1, 45),  -- Basic Finance, Nguyen Hoang Lan, Room 406, Thu, 15:50-18:30
+('INS109101', 21, 17, 1, 1, 45),  -- English Linguistics 2, Hoang Tuyet Minh, Room 401, Mon, 07:00-09:40
+('PEC100802', 22, 6, 6, 1, 45),   -- Marx Leninist Political Economy, Hoang Trieu Hoa, Room 403, Tue, 09:50-12:30
+('PHI100201', 23, 11, 13, 1, 45), -- Scientific Socialism (Duong Van Duyen), Room 503, Thu, 07:00-09:40
+('INE105002', 24, 18, 20, 1, 45), -- Microeconomics, Trinh Thi Thu Hang, Room 502, Fri, 15:50-18:30
+('INS315201', 11, 13, 1, 1, 45),  -- Robotics, Nguyen Van Tinh, Room 409, Mon, 07:00-09:40
+('INS323702', 11, 15, 9, 1, 45),  -- Electric Motors and Drive Systems, Nguyen Van Tinh, Room 405, Wed, 07:00-09:40
+('INS315101', 12, 13, 13, 1, 45), -- Embedded Control Systems, Nguyen Hoang Dung, Room 409, Thu, 07:00-09:40 (This is the second entry for this course by this lecturer on this day, but different room as per Excel)
+('INS325402', 25, 1, 2, 1, 45),   -- Introduction to Data Science, Pham Thi Viet Huong, Room 407, Mon, 09:50-12:30
+('INS306603', 26, 2, 3, 1, 45),   -- Business Solutions for Enterprises, Nguyen Duy Thanh, Room 406, Mon, 13:00-15:40
+('INS328003', 27, 16, 12, 1, 45), -- Data Preparation and Visualization, Pham Thi Thanh Thuy, Room 606, Wed, 15:50-18:30
+('INS304901', 28, 10, 13, 1, 45), -- Econometrics, Le Van Dao, Room 402, Thu, 07:00-09:40
+('INS308001', 29, 19, 20, 1, 45), -- Artificial Intelligence, Pham Thi Kim Dung, Room 602, Fri, 15:50-18:30
+('BSA105501', 30, 20, 2, 1, 45),  -- Business Culture, Alexis Rez, Room 408, Mon, 09:50-12:30
+('BSA301202', 9, 21, 19, 1, 45),  -- Marketing Research, Bui My Trinh, Room 603, Fri, 13:00-15:40
+('BSA301402', 31, 20, 6, 1, 45),  -- Service Marketing, Vu Dieu Thuy, Room 408, Tue, 09:50-12:30
+('BSA301402', 32, 1, 11, 1, 45),  -- Service Marketing, Le Thi Mai, Room 407, Wed, 13:00-15:40
+('INE105001', 24, 6, 19, 1, 45),  -- Microeconomics, Trinh Thi Thu Hang, Room 403, Fri, 13:00-15:40
+('INE105102', 33, 6, 2, 1, 45),   -- Macroeconomics, Nghiem Xuan Hoa, Room 403, Mon, 09:50-12:30
+('INE300901', 34, 9, 12, 1, 45),  -- International Project Management, Nguyen Ngoc Quy, Room 506, Wed, 15:50-18:30
+('INE306001', 35, 6, 3, 1, 45),   -- E-Commerce, Vu Minh Quan, Room 403, Mon, 13:00-15:40
+('FIB300501', 36, 18, 5, 1, 45),  -- Investment and Portfolio Management, Nguyen Tuan Minh, Room 502, Tue, 07:00-09:40
+('INS200903', 10, 6, 6, 1, 45),   -- Principles of Accounting, Tran The Nu, Room 403, Tue, 09:50-12:30
+('INS201502', 37, 15, 11, 1, 45), -- Basic Finance, Le Thi Thu Huong, Room 405, Wed, 13:00-15:40
+('INS201601', 36, 3, 2, 1, 45),   -- Risk and Risk Analysis, Nguyen Tuan Minh, Room 504, Mon, 09:50-12:30
+('INS209801', 10, 17, 17, 1, 45), -- Principles of Accounting, Tran The Nu, Room 401, Fri, 07:00-09:40
+('INS201503', 20, 20, 11, 1, 45), -- Basic Finance, Nguyen Hoang Lan, Room 408, Wed, 13:00-15:40
+('INS209804', 38, 12, 3, 1, 45),  -- Principles of Accounting, Duong My Hanh, Room 501, Mon, 13:00-15:40
+('INS210902', 39, 10, 7, 1, 45),  -- Managerial Accounting, Nguyen Thi Kim Oanh, Room 402, Tue, 13:00-15:40
+('INS301601', 40, 13, 15, 1, 45), -- Computerized Accounting Practice, Nguyen Thi Nhu Ai, Room 409, Thu, 13:00-15:40
+('INS302803', 41, 1, 18, 1, 45),  -- Risk Management and Insurance, Nguyen Phu Hung, Room 407, Fri, 09:50-12:30
+('INS301603', 42, 22, 23, 1, 45), -- Computerized Accounting Practice, Bui To Quyen, Room 513, Sat, 13:00-15:40
+('INS303201', 43, 18, 10, 1, 45), -- International Finance, Do Phuong Huyen, Room 502, Wed, 09:50-12:30
+('INS318901', 44, 9, 8, 1, 45),   -- Corporate Finance, Chu Van Hung, Room 506, Tue, 15:50-18:30
+('INS302901', 45, 1, 9, 1, 45),   -- Financial Markets and Institutions, Khuc The Anh, Room 407, Wed, 07:00-09:40
+('INS303002', 46, 23, 18, 1, 45), -- Financial Statement Analysis, Chu Huy Anh, Room 508, Fri, 09:50-12:30
+('INS325101', 47, 5, 9, 1, 45),   -- Taxation, Nguyen Thi Thanh Hoai, Room 604, Wed, 07:00-09:40
+('INS309701', 48, 12, 18, 1, 45), -- Accounting I: Financial Accounting, Nguyen Thi Thanh Phuong, Room 501, Fri, 09:50-12:30
+('INS325201', 46, 15, 14, 1, 45); -- Financial Accounting 2, Chu Huy Anh, Room 405, Thu, 09:50-12:30
 
 -- --------------------------------------------------------
 
@@ -379,7 +387,18 @@ INSERT INTO `users` (`UserID`, `Username`, `PasswordHash`, `Role`, `FullName`, `
 --
 -- Chỉ mục cho các bảng đã đổ
 --
-
+CREATE TABLE StudentPersonalSchedules (
+    StudentPersonalScheduleID INT AUTO_INCREMENT PRIMARY KEY,
+    StudentID VARCHAR(20) NOT NULL,
+    SemesterID INT NOT NULL,
+    ScheduleName VARCHAR(255) NOT NULL,
+    ScheduleData JSON NOT NULL, -- Hoặc TEXT nếu phiên bản MySQL cũ hơn không hỗ trợ JSON tốt
+    IsActive BOOLEAN DEFAULT 0, -- 0 for false, 1 for true
+    SavedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (StudentID) REFERENCES Students(StudentID) ON DELETE CASCADE,
+    FOREIGN KEY (SemesterID) REFERENCES Semesters(SemesterID) ON DELETE CASCADE,
+    UNIQUE KEY uq_student_semester_schedulename (StudentID, SemesterID, ScheduleName) -- Optional: ensure unique names per student/semester
+);
 ALTER TABLE `classrooms`
   ADD PRIMARY KEY (`ClassroomID`),
   ADD UNIQUE KEY `RoomCode` (`RoomCode`);
@@ -462,6 +481,31 @@ ALTER TABLE `studentenrollments`
 
 COMMIT;
 
-/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
-/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
-/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
+ALTER TABLE ScheduledClasses
+ADD COLUMN NumStudents INT DEFAULT NULL AFTER SemesterID;
+ALTER TABLE Courses
+ADD COLUMN MajorCategory VARCHAR(100) NULL DEFAULT NULL COMMENT 'Stores the major category like Economics, Technology, Language';
+
+UPDATE Courses SET MajorCategory = 'Economics' WHERE CourseID IN (
+    'INS309701', 'MAT109204', 'INS201501', 'INS201502', 'INS201503', 'BSA105501', 
+    'INS211102', 'INS306603', 'INS318901', 'INE306001', 'INS304901', 'INS201101', 
+    'INS300202', 'INS325201', 'INS302901', 'INS303002', 'INS30201', 'INS327102', 
+    'INS302203', 'INS303201', 'INE300901', 'FIB300501', 'INE105102', 'INS210902', 
+    'BSA301201', 'BSA301202', 'MAT100501', 'INE105001', 'INE105002', 
+    'INS200903', 'INS209801', 'INS209804', 'INS201601', 'INS302803', 'BSA301402', 
+    'INS325101'
+);
+
+UPDATE Courses SET MajorCategory = 'Technology' WHERE CourseID IN (
+    'INS306002', 'INS308001', 'INS301601', 'INS301603', 'INS328003', 'INS306901', 
+    'INS207402', 'INS323702', 'INS323703', 'INS315101', 'INS307403', 'INS203702', 
+    'INS325402', 'INS207303', 'INS315201'
+);
+
+UPDATE Courses SET MajorCategory = 'Language' WHERE CourseID IN (
+    'INS109101', 'RUS500201'
+);
+
+UPDATE Courses SET MajorCategory = 'Philosophy' WHERE CourseID IN (
+    'PHI100201', 'PEC100802'
+);

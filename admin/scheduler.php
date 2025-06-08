@@ -1,678 +1,554 @@
 <?php
-// htdocs/DSS/admin/scheduler.php
 
-require_once __DIR__ . '/../includes/functions.php';
-require_once __DIR__ . '/../includes/db_connect.php';
-require_role(['admin'], '../login.php');
+if (session_status() == PHP_SESSION_NONE) {
+    session_start();
+}
 
-$page_title = "Generate & Optimize Schedule";
-
-// --- Giá trị mặc định cho form (GIỮ NGUYÊN CÁC GIÁ TRỊ MÀ BẠN ĐÃ TEST RA KẾT QUẢ TỐT) ---
-$default_python_executable = 'python3'; 
-$default_cp_time_limit = 30; 
-$default_ga_pop_size = 50; 
-$default_ga_generations = 100;
-$default_ga_crossover_rate = 0.8;
-$default_ga_mutation_rate = 0.2;
-$default_ga_tournament_size = 5;
-$default_ga_allow_hc_violations = true; // Giá trị này quan trọng để có penalty thấp như output bạn đã có
-$default_priority = 'medium';
-
-// Giữ lại giá trị người dùng đã nhập nếu có POST (dù AJAX không nên reload trang, nhưng đây là phòng hờ)
-$form_values = [
-    'semester_id' => $_POST['semester_id'] ?? '', // Sẽ được JS cập nhật khi chọn
-    'python_executable_path' => $_POST['python_executable_path'] ?? $default_python_executable,
-    'cp_time_limit_seconds' => $_POST['cp_time_limit_seconds'] ?? $default_cp_time_limit,
-    'ga_population_size' => $_POST['ga_population_size'] ?? $default_ga_pop_size,
-    'ga_generations' => $_POST['ga_generations'] ?? $default_ga_generations,
-    'ga_crossover_rate' => $_POST['ga_crossover_rate'] ?? $default_ga_crossover_rate,
-    'ga_mutation_rate' => $_POST['ga_mutation_rate'] ?? $default_ga_mutation_rate,
-    'ga_tournament_size' => $_POST['ga_tournament_size'] ?? $default_ga_tournament_size,
-    // Xử lý checkbox: nếu form được submit (dù là AJAX), giá trị sẽ là 'true' (string) hoặc không tồn tại
-    // Khi trang tải lần đầu (không phải POST), dùng $default_ga_allow_hc_violations
-    'ga_allow_hard_constraint_violations' => isset($_POST['run_scheduler']) ? (isset($_POST['ga_allow_hard_constraint_violations'])) : $default_ga_allow_hc_violations,
-    'priority_student_clash' => $_POST['priority_student_clash'] ?? $default_priority,
-    'priority_lecturer_load_break' => $_POST['priority_lecturer_load_break'] ?? $default_priority,
-    'priority_classroom_util' => $_POST['priority_classroom_util'] ?? $default_priority,
-];
-
-
-$semesters_options_html = generate_select_options($conn, 'Semesters', 'SemesterID', 'SemesterName', $form_values['semester_id'], '', 'StartDate DESC');
-
-require_once __DIR__ . '/../includes/admin_sidebar_menu.php'; // Include layout
-?>
-
-<div class="container-fluid">
-    <h1 class="mt-4"><?php echo htmlspecialchars($page_title); ?></h1>
-    <ol class="breadcrumb mb-4">
-        <li class="breadcrumb-item"><a href="<?php echo BASE_URL; ?>admin/index.php">Dashboard</a></li>
-        <li class="breadcrumb-item active">Configure and Run Scheduler</li>
-    </ol>
-
-    <div id="schedulerMessages"></div> 
-
-    <div class="card mb-4">
-        <div class="card-header"><i class="fas fa-cogs me-1"></i> Scheduler Configuration</div>
-        <div class="card-body">
-            <form id="schedulerConfigForm">
-                <!-- === General Settings === -->
-                <h5 class="mb-3 text-primary"><i class="fas fa-sliders-h me-2"></i>General Settings</h5>
-                <div class="row">
-                    <div class="col-md-4 mb-3">
-                        <label for="semester_id" class="form-label">Target Semester <span class="text-danger">*</span></label>
-                        <select class="form-select" id="semester_id" name="semester_id" required aria-describedby="semesterHelp">
-                            <option value="">-- Select Semester --</option>
-                            <?php echo $semesters_options_html; ?>
-                        </select>
-                        <small id="semesterHelp" class="form-text text-muted">Select the academic semester for scheduling.</small>
-                    </div>
-                    <div class="col-md-8 mb-3">
-                        <label for="python_executable_path" class="form-label">Python Interpreter Command/Path</label>
-                        <input type="text" class="form-control" id="python_executable_path" name="python_executable_path" value="<?php echo htmlspecialchars($form_values['python_executable_path']); ?>" aria-describedby="pythonPathHelp">
-                        <small id="pythonPathHelp" class="form-text text-muted">Usually <code>python</code> or <code>python3</code>. Provide a full path if it's not in the system's PATH environment variable.</small>
-                    </div>
-                </div>
-                <hr class="my-4">
-
-                <!-- === Phase 1: CP-SAT Solver Settings === -->
-                <h5 class="mb-3 text-primary"><i class="fas fa-puzzle-piece me-2"></i>Phase 1: Initial Schedule Builder (CP-SAT)</h5>
-                <div class="row">
-                    <div class="col-md-6 mb-3">
-                        <label for="cp_time_limit_seconds" class="form-label">Max Time for Initial Solution (seconds)</label>
-                        <input type="number" class="form-control" id="cp_time_limit_seconds" name="cp_time_limit_seconds" min="5" step="1" value="<?php echo htmlspecialchars($form_values['cp_time_limit_seconds']); ?>" aria-describedby="cpTimeHelp">
-                        <small id="cpTimeHelp" class="form-text text-muted">Sets how long the system can spend finding an initial schedule that meets all strict rules. Increase for very complex semesters.</small>
-                    </div>
-                </div>
-                <hr class="my-4">
-
-                <!-- === Phase 2: Genetic Algorithm (GA) Settings === -->
-                <h5 class="mb-3 text-primary"><i class="fas fa-dna me-2"></i>Phase 2: Schedule Optimization (Genetic Algorithm)</h5>
-                <p class="text-muted small mb-3">These settings control how the algorithm refines the initial schedule to meet preferences and improve quality.</p>
-                <div class="row">
-                    <div class="col-md-4 mb-3">
-                        <label for="ga_population_size" class="form-label">Number of Schedule Variations</label>
-                        <input type="number" class="form-control" id="ga_population_size" name="ga_population_size" min="10" step="10" value="<?php echo htmlspecialchars($form_values['ga_population_size']); ?>" aria-describedby="gaPopHelp">
-                        <small id="gaPopHelp" class="form-text text-muted">How many different schedule versions are kept and evolved in each cycle. Larger values allow for more diverse exploration but slow down the process.</small>
-                    </div>
-                    <div class="col-md-4 mb-3">
-                        <label for="ga_generations" class="form-label">Optimization Cycles</label>
-                        <input type="number" class="form-control" id="ga_generations" name="ga_generations" min="10" step="10" value="<?php echo htmlspecialchars($form_values['ga_generations']); ?>" aria-describedby="gaGenHelp">
-                        <small id="gaGenHelp" class="form-text text-muted">The number of times the algorithm tries to improve the schedules. More cycles can lead to better quality but increase runtime.</small>
-                    </div>
-                    <div class="col-md-4 mb-3">
-                        <label for="ga_tournament_size" class="form-label">Selection Strength</label>
-                        <input type="number" class="form-control" id="ga_tournament_size" name="ga_tournament_size" min="2" step="1" value="<?php echo htmlspecialchars($form_values['ga_tournament_size']); ?>" aria-describedby="gaTourHelp">
-                        <small id="gaTourHelp" class="form-text text-muted">In each cycle, a small group of schedules "compete". This sets the group size. Higher values mean a stronger preference for picking already good schedules.</small>
-                    </div>
-                </div>
-                <div class="row">
-                     <div class="col-md-6 mb-3">
-                        <label for="ga_crossover_rate" class="form-label">Schedule Combination Rate (0.1 - 1.0)</label>
-                        <input type="number" class="form-control" id="ga_crossover_rate" name="ga_crossover_rate" min="0.1" max="1.0" step="0.05" value="<?php echo htmlspecialchars($form_values['ga_crossover_rate']); ?>" aria-describedby="gaCrossHelp">
-                        <small id="gaCrossHelp" class="form-text text-muted">The chance that two good schedules will be combined to create new ones. Higher values encourage mixing of schedule parts.</small>
-                    </div>
-                    <div class="col-md-6 mb-3">
-                        <label for="ga_mutation_rate" class="form-label">Random Change Rate (0.01 - 1.0)</label>
-                        <input type="number" class="form-control" id="ga_mutation_rate" name="ga_mutation_rate" min="0.01" max="1.0" step="0.01" value="<?php echo htmlspecialchars($form_values['ga_mutation_rate']); ?>" aria-describedby="gaMutHelp">
-                        <small id="gaMutHelp" class="form-text text-muted">The chance of making small, random adjustments to a schedule. This helps introduce new variations and avoid getting stuck.</small>
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="col-md-12 mb-3 form-check">
-                        <input class="form-check-input" type="checkbox" value="true" id="ga_allow_hard_constraint_violations" name="ga_allow_hard_constraint_violations" <?php echo $form_values['ga_allow_hard_constraint_violations'] ? 'checked' : ''; ?>>
-                        <label class="form-check-label" for="ga_allow_hard_constraint_violations" aria-describedby="gaHcHelp">
-                            Advanced: Allow Optimizer to Temporarily Break Strict Rules
-                        </label>
-                        <small id="gaHcHelp" class="form-text text-muted d-block">For testing/experimental purposes. If checked, the optimizer might explore schedules that briefly violate essential rules (e.g., lecturer double-booked). This can sometimes uncover unique solutions for difficult cases but is generally NOT recommended for standard use, as the final schedule might require manual fixing if it still contains such violations. This setting directly impacts the "Hard Constraints Violated" metric and overall penalty.</small>
-                    </div>
-                </div>
-
-                <hr class="my-4">
-                <h5 class="mb-3 text-primary"><i class="fas fa-bullseye me-2"></i>Optimization Goal Priorities</h5>
-                 <p class="text-muted small mb-3">Set the importance for different scheduling preferences. The algorithm will try harder to satisfy goals with higher priority, which influences the final "Penalty Score".</p>
-                <div class="row">
-                    <div class="col-md-4 mb-3">
-                        <label for="priority_student_clash" class="form-label">Minimize Student Timetable Conflicts</label>
-                        <select class="form-select" id="priority_student_clash" name="priority_student_clash" aria-describedby="prioStudentHelp">
-                            <option value="low" <?php selected_if_match($form_values['priority_student_clash'], 'low'); ?>>Low</option>
-                            <option value="medium" <?php selected_if_match($form_values['priority_student_clash'], 'medium'); ?>>Medium</option>
-                            <option value="high" <?php selected_if_match($form_values['priority_student_clash'], 'high'); ?>>High</option>
-                            <option value="very_high" <?php selected_if_match($form_values['priority_student_clash'], 'very_high'); ?>>Very High</option>
-                        </select>
-                        <small id="prioStudentHelp" class="form-text text-muted">How strongly to avoid students having overlapping classes. "Very High" makes this a top priority.</small>
-                    </div>
-                    <div class="col-md-4 mb-3">
-                        <label for="priority_lecturer_load_break" class="form-label">Optimize Lecturer Workload & Breaks</label>
-                        <select class="form-select" id="priority_lecturer_load_break" name="priority_lecturer_load_break" aria-describedby="prioLecturerHelp">
-                           <option value="low" <?php selected_if_match($form_values['priority_lecturer_load_break'], 'low'); ?>>Low</option>
-                            <option value="medium" <?php selected_if_match($form_values['priority_lecturer_load_break'], 'medium'); ?>>Medium</option>
-                            <option value="high" <?php selected_if_match($form_values['priority_lecturer_load_break'], 'high'); ?>>High</option>
-                            <option value="very_high" <?php selected_if_match($form_values['priority_lecturer_load_break'], 'very_high'); ?>>Very High</option>
-                        </select>
-                         <small id="prioLecturerHelp" class="form-text text-muted">Emphasis on fair teaching loads (not too many or too few classes per lecturer) and ensuring adequate breaks.</small>
-                    </div>
-                    <div class="col-md-4 mb-3">
-                        <label for="priority_classroom_util" class="form-label">Optimize Classroom Usage</label>
-                        <select class="form-select" id="priority_classroom_util" name="priority_classroom_util" aria-describedby="prioRoomHelp">
-                             <option value="low" <?php selected_if_match($form_values['priority_classroom_util'], 'low'); ?>>Low</option>
-                            <option value="medium" <?php selected_if_match($form_values['priority_classroom_util'], 'medium'); ?>>Medium</option>
-                            <option value="high" <?php selected_if_match($form_values['priority_classroom_util'], 'high'); ?>>High</option>
-                            <option value="very_high" <?php selected_if_match($form_values['priority_classroom_util'], 'very_high'); ?>>Very High</option>
-                        </select>
-                        <small id="prioRoomHelp" class="form-text text-muted">Focus on using classroom space well (e.g., avoiding assigning small classes to very large rooms).</small>
-                    </div>
-                </div>
-                <button type="submit" id="runSchedulerBtn" class="btn btn-primary btn-lg mt-4">
-                    <i class="fas fa-cogs me-2"></i>Generate & Optimize Schedule
-                </button>
-                 <button type="button" id="cancelSchedulerBtn" class="btn btn-danger btn-lg mt-4" style="display:none;">
-                    <i class="fas fa-stop-circle me-2"></i>Cancel Generation
-                </button>
-            </form>
-        </div>
-    </div>
-
-    <!-- Progress Section -->
-    <div id="progressSection" class="card mb-4" style="display:none;">
-        <div class="card-header"><i class="fas fa-spinner fa-spin me-1"></i> Scheduler Progress</div>
-        <div class="card-body">
-            <div class="progress mb-3" style="height: 25px;">
-                <div id="progressBar" class="progress-bar progress-bar-striped progress-bar-animated bg-info" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
-            </div>
-            <h6>Process Log:</h6>
-            <pre id="processLogOutput" class="log-output bg-light p-3 rounded border" style="max-height: 400px; overflow-y: auto; font-family: 'Courier New', Courier, monospace;"></pre>
-        </div>
-    </div>
-
-    <!-- Results Section -->
-    <div id="resultsSection" class="card mb-4" style="display:none;">
-        <div class="card-header">
-            <i class="fas fa-calendar-alt me-1"></i> Scheduling Results
-            <div class="btn-group float-end" role="group" aria-label="View Toggles">
-                <input type="radio" class="btn-check" name="viewType" id="viewTableBtn" value="table" autocomplete="off" checked>
-                <label class="btn btn-outline-primary btn-sm" for="viewTableBtn"><i class="fas fa-table"></i> Table</label>
-
-                <input type="radio" class="btn-check" name="viewType" id="viewWeeklyBtn" value="weekly" autocomplete="off">
-                <label class="btn btn-outline-primary btn-sm" for="viewWeeklyBtn"><i class="fas fa-calendar-week"></i> Weekly Grid</label>
-
-                <input type="radio" class="btn-check" name="viewType" id="viewDailyBtn" value="daily" autocomplete="off">
-                <label class="btn btn-outline-primary btn-sm" for="viewDailyBtn"><i class="fas fa-calendar-day"></i> Daily List</label>
-            </div>
-        </div>
-        <div class="card-body">
-            <div id="resultMetrics" class="mb-4"></div>
-            
-            <div id="scheduleTableViewContainer" class="schedule-view-content">
-                <h5 class="mt-3 schedule-view-title">Generated Schedule (Table Format):</h5>
-                <div id="scheduleTableContainer"><p class='text-muted'>Schedule will be displayed here.</p></div>
-            </div>
-            <div id="scheduleWeeklyViewContainer" class="schedule-view-content" style="display:none;">
-                <h5 class="mt-3 schedule-view-title">Generated Schedule (Weekly Grid View):</h5>
-                <div id="scheduleWeeklyVisualContainer"><p class='text-muted'>Weekly schedule will be displayed here.</p></div>
-            </div>
-            <div id="scheduleDailyViewContainer" class="schedule-view-content" style="display:none;">
-                <h5 class="mt-3 schedule-view-title">Generated Schedule (Daily List View):</h5>
-                <div id="scheduleDailyVisualContainer"><p class='text-muted'>Daily schedule will be displayed here.</p></div>
-            </div>
-        </div>
-    </div>
-
-</div> 
-<!-- Kết thúc container-fluid -->
-
-<?php
-// Các thẻ <style> và <script> cụ thể cho trang này sẽ được đặt ở đây.
-// File layout admin_sidebar_menu.php chịu trách nhiệm đóng </body> và </html>.
-// Nó cũng nên include các JS chung như Bootstrap.
-?>
-
-<style>
-    .log-output { 
-        white-space: pre-wrap; 
-        word-wrap: break-word; 
-        font-size: 0.85em; 
-        border: 1px solid #ccc; 
-        background-color: #f8f9fa;
+if (!defined('BASE_URL')) {
+    $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' || $_SERVER['SERVER_PORT'] == 443) ? "https://" : "http://";
+    $host = $_SERVER['HTTP_HOST'];
+    $app_base_path = '/DSS/'; 
+    
+    if ($app_base_path !== '/') { 
+        $app_base_path = '/' . trim($app_base_path, '/') . '/';
     }
-    .schedule-table th, .schedule-table td { 
-        vertical-align: middle; 
-        text-align: center; 
-        font-size: 0.85rem;
-        padding: 0.4rem 0.2rem;
-    }
-    .schedule-table th { 
-        background-color: #343a40; 
-        color: white; 
-    }
-    .schedule-view-title { 
-        border-bottom: 1px solid #eee; 
-        padding-bottom: 0.5rem; 
-        margin-bottom: 1rem; 
+    define('BASE_URL', $protocol . $host . $app_base_path);
+}
+
+function redirect(string $relative_app_path): void {
+    $base_url = rtrim(BASE_URL, '/');
+    $path_segment = ltrim($relative_app_path, '/'); 
+    $target_url = $base_url . '/' . $path_segment;
+
+    if (strpos($target_url, '://') !== false) {
+        list($protocol_part, $path_part_after_protocol) = explode('://', $target_url, 2);
+        $path_part_after_protocol = preg_replace('#/{2,}#', '/', $path_part_after_protocol);
+        $target_url = $protocol_part . '://' . $path_part_after_protocol;
+    } else {
+        $target_url = preg_replace('#/{2,}#', '/', $target_url);
     }
     
-    .schedule-visual-weekly .table { 
-        table-layout: fixed; 
-        min-width: 800px; 
-    } 
-    .schedule-visual-weekly th, .schedule-visual-weekly .schedule-time-cell {
-        font-size: 0.8rem;
-        padding: 0.5rem 0.2rem;
-    }
-    .schedule-visual-weekly .schedule-slot {
-        height: auto; 
-        min-height: 80px; 
-        vertical-align: top;
-        padding: 3px;
-        font-size: 0.7rem; 
-        position: relative; 
-        border: 1px solid #e9ecef; 
-    }
-    .schedule-visual-weekly .schedule-event {
-        font-size: 0.65rem; 
-        line-height: 1.1;
-        overflow: hidden;
-        cursor: default;
-        border: 1px solid #bee5eb; 
-        background-color: #e0f7fa; 
-        color: #0c5460; 
-        border-radius: 3px;
-        margin-bottom: 2px !important; 
-        padding: 2px 3px;
-    }
-    .schedule-visual-weekly .schedule-event strong.event-course { 
-        display: block; 
-        font-weight: bold;
-        white-space: normal; 
-        margin-bottom: 1px;
-    }
-    .schedule-visual-weekly .schedule-event small {
-        display: block;
-        white-space: normal; 
-        line-height: 1.0;
-    }
-     .schedule-visual-weekly .schedule-event .event-lecturer,
-     .schedule_visual-weekly .schedule-event .event-room {
-        font-size: 0.6rem; 
-        color: #545b62;
-     }
+    header("Location: " . $target_url);
+    exit(); 
+}
 
-    .daily-schedule-card .list-group-item h6 { font-size: 0.9rem; }
-    .daily-schedule-card .list-group-item p small { font-size: 0.8rem; }
-    .form-label { font-weight: 500; }
-    .form-text.text-muted { font-size: 0.8rem; margin-top: 0.15rem; }
-    h5.mb-3.text-primary {
-        font-size: 1.15rem;
-        color: var(--primary-blue) !important; /* Ensure primary color is used */
-        padding-bottom: 0.5rem;
-        border-bottom: 2px solid var(--primary-blue);
-        margin-top: 1.75rem; /* More spacing for section titles */
+function sanitize_input(mixed $data): string {
+    if (is_array($data)) {
+        error_log("Warning: sanitize_input() received an array. Input: " . print_r($data, true) . ". Returning empty string.");
+        return ''; 
     }
-     h5.mb-3.text-primary:first-of-type { /* For the very first H5 */
-        margin-top: 0.5rem; /* Less top margin for the first one */
-    }
+    $data_string = (string) $data;
+    $data_string = trim($data_string);
+    $data_string = htmlspecialchars($data_string, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+    return $data_string;
+}
 
-    /* Style for active view button group */
-    .btn-group > .btn-check:checked + .btn-outline-primary,
-    .btn-group > .btn-check:active + .btn-outline-primary,
-    .btn-group > .btn-outline-primary:active,
-    .btn-group > .btn-outline-primary.active,
-    .btn-group > .btn-outline-primary.dropdown-toggle.show {
-        color: #fff;
-        background-color: var(--primary-blue, #007bff); 
-        border-color: var(--primary-blue, #007bff);
-    }
-</style>
+function is_logged_in(): bool {
+    return isset($_SESSION['user_id']);
+}
 
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-    // --- TOÀN BỘ JAVASCRIPT GIỮ NGUYÊN NHƯ PHIÊN BẢN TRƯỚC ---
-    // (Bao gồm các const khai báo element, các hàm displayMessage, updateProgress, 
-    // pollProgress, fetchResults, renderMetrics, renderTableView, renderWeeklyView, 
-    // renderDailyView, stopPollingAndReset, và event listener cho configForm)
+function get_current_user_id(): ?int {
+    return isset($_SESSION['user_id']) && is_numeric($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : null;
+}
 
-    // Chỉ cần đảm bảo các ID trong HTML khớp với các getElementById trong JS.
-    // Ví dụ: cp_time_limit_seconds, ga_population_size, v.v...
-    // Và khi JavaScript tạo configPayload, các key phải khớp với thuộc tính `name` của input.
+function get_current_user_role(): ?string {
+    return isset($_SESSION['role']) && is_string($_SESSION['role']) ? $_SESSION['role'] : null;
+}
 
-    // ----- BẮT ĐẦU PHẦN JAVASCRIPT GIỮ NGUYÊN -----
-    const configForm = document.getElementById('schedulerConfigForm');
-    const runBtn = document.getElementById('runSchedulerBtn');
-    const progressSection = document.getElementById('progressSection');
-    const progressBar = document.getElementById('progressBar');
-    const processLogOutput = document.getElementById('processLogOutput');
-    const resultsSection = document.getElementById('resultsSection');
-    const resultMetrics = document.getElementById('resultMetrics');
-    const schedulerMessages = document.getElementById('schedulerMessages');
+function get_current_user_fullname(): ?string {
+    return isset($_SESSION['fullname']) && is_string($_SESSION['fullname']) ? $_SESSION['fullname'] : null;
+}
 
-    const viewTableBtnRadio = document.getElementById('viewTableBtn');
-    const viewWeeklyBtnRadio = document.getElementById('viewWeeklyBtn');
-    const viewDailyBtnRadio = document.getElementById('viewDailyBtn');
-    
-    const tableViewContainer = document.getElementById('scheduleTableViewContainer');
-    const weeklyViewContainer = document.getElementById('scheduleWeeklyViewContainer');
-    const dailyViewContainer = document.getElementById('scheduleDailyViewContainer');
-    
-    const scheduleTableContainer = document.getElementById('scheduleTableContainer');
-    const scheduleWeeklyVisualContainer = document.getElementById('scheduleWeeklyVisualContainer');
-    const scheduleDailyVisualContainer = document.getElementById('scheduleDailyVisualContainer');
+function get_current_user_linked_entity_id(): ?string {
+    return isset($_SESSION['linked_entity_id']) ? (string)$_SESSION['linked_entity_id'] : null;
+}
 
-    let progressInterval = null;
-    let currentRunOutputFilename = null;
-
-    function displayMessage(message, type = 'info') {
-        while (schedulerMessages.firstChild) {
-            schedulerMessages.removeChild(schedulerMessages.firstChild);
+function require_role(array $allowed_roles, string $login_page_relative_to_base = 'login.php', string $unauthorized_page_content = "<!DOCTYPE html><html lang='en'><head><meta charset='UTF-8'><meta name='viewport' content='width=device-width, initial-scale=1.0'><title>403 Forbidden</title><style>body{font-family:sans-serif;display:flex;justify-content:center;align-items:center;min-height:80vh;text-align:center;background-color:#f8f9fa;color:#6c757d;}.container{padding:20px;border:1px solid #dee2e6;border-radius:5px;background-color:white;}h1{color:#dc3545;}</style></head><body><div class='container'><h1>403 Forbidden</h1><p>You do not have permission to access this page.</p><p><a href='" . BASE_URL . "'>Go to Homepage</a></p></div></body></html>"): void {
+    if (!is_logged_in()) {
+        $request_uri = $_SERVER['REQUEST_URI']; 
+        $base_url_path_component = parse_url(BASE_URL, PHP_URL_PATH) ?: '/'; 
+        
+        $relative_redirect_path_to_app = $request_uri;
+        $base_url_path_component_for_strip = rtrim($base_url_path_component, '/') . '/';
+        if ($base_url_path_component_for_strip !== '/' && strpos($request_uri, $base_url_path_component_for_strip) === 0) {
+            $relative_redirect_path_to_app = substr($request_uri, strlen($base_url_path_component_for_strip));
         }
-        const alertDiv = document.createElement('div');
-        alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
-        alertDiv.setAttribute('role', 'alert');
-        alertDiv.innerHTML = `${message} <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>`;
-        schedulerMessages.appendChild(alertDiv);
-        if (type === 'success' || type === 'info') {
-            setTimeout(() => {
-                const currentAlert = schedulerMessages.querySelector(`.alert-${type}`);
-                if (currentAlert) {
-                    const bsAlert = bootstrap.Alert.getOrCreateInstance(currentAlert);
-                    if (bsAlert) bsAlert.close();
-                }
-            }, 7000);
+        $_SESSION['redirect_url'] = ltrim($relative_redirect_path_to_app, '/');
+
+        set_flash_message('auth_error', 'You need to login to access this page.', 'warning');
+        redirect($login_page_relative_to_base);
+    }
+    
+    $user_role = get_current_user_role();
+    if ($user_role === null || !in_array($user_role, $allowed_roles, true)) {
+        http_response_code(403); 
+        echo $unauthorized_page_content;
+        exit();
+    }
+}
+
+function set_flash_message(string $name, string $message, string $type = 'info'): void {
+    if (!isset($_SESSION['flash_messages']) || !is_array($_SESSION['flash_messages'])) {
+        $_SESSION['flash_messages'] = [];
+    }
+    $_SESSION['flash_messages'][$name] = ['message' => $message, 'type' => $type];
+}
+
+function display_flash_message(string $name): string {
+    if (isset($_SESSION['flash_messages'][$name])) {
+        $flash = $_SESSION['flash_messages'][$name];
+        unset($_SESSION['flash_messages'][$name]); 
+        $alert_class = 'alert-' . htmlspecialchars(sanitize_input($flash['type'])); 
+        return "<div class='alert {$alert_class} alert-dismissible fade show py-2 mb-3' role='alert'>" . 
+               htmlspecialchars($flash['message']) . 
+               "<button type='button' class='btn-close' data-bs-dismiss='alert' aria-label='Close'></button></div>";
+    }
+    return '';
+}
+
+function display_all_flash_messages(): string {
+    $output = '';
+    if (!empty($_SESSION['flash_messages']) && is_array($_SESSION['flash_messages'])) {
+        foreach (array_keys($_SESSION['flash_messages']) as $name) {
+            $output .= display_flash_message($name);
+        }
+    }
+    return $output;
+}
+
+
+function format_datetime_for_display(?string $datetime_string, string $format = 'd/m/Y H:i:s'): string {
+    if (empty($datetime_string) || $datetime_string === '0000-00-00 00:00:00' || $datetime_string === null) return 'N/A';
+    try { $date = new DateTime($datetime_string); return $date->format($format); } 
+    catch (Exception $e) { return 'Invalid Date';}
+}
+
+function format_date_for_display(?string $date_string, string $format = 'd/m/Y'): string {
+    if (empty($date_string) || $date_string === '0000-00-00' || $date_string === null) return 'N/A';
+    try { $date = new DateTime($date_string); return $date->format($format); }
+    catch (Exception $e) { return 'Invalid Date'; }
+}
+
+function format_time_for_display(?string $time_string, string $format = 'H:i'): string {
+    if (empty($time_string) || $time_string === null) return 'N/A';
+    try {
+        $date = DateTime::createFromFormat('H:i:s', $time_string) ?: DateTime::createFromFormat('H:i', $time_string);
+        return $date ? $date->format($format) : 'Invalid Time';
+    } catch (Exception $e) { return 'Invalid Time'; }
+}
+
+function generate_select_options(
+    mysqli $conn, 
+    string $table_name, 
+    string $value_column, 
+    mixed $text_columns, 
+    mixed $selected_value = null, 
+    string $condition = "", 
+    string $order_by = "", 
+    string $default_option_text = "-- Select Options --"
+): string {
+    $options_html = '';
+    if (!empty($default_option_text)) { 
+        $options_html .= "<option value=''>" . htmlspecialchars($default_option_text) . "</option>"; 
+    }
+
+    $safe_table_name = "`" . str_replace("`", "", $table_name) . "`";
+    $safe_value_column = "`" . str_replace("`", "", $value_column) . "`";
+    
+    $safe_text_column_parts = [];
+    if (is_array($text_columns)) {
+        foreach ($text_columns as $tc) {
+            $safe_text_column_parts[] = "`" . str_replace("`", "", (string)$tc) . "`";
+        }
+    } else {
+        $safe_text_column_parts[] = "`" . str_replace("`", "", (string)$text_columns) . "`";
+    }
+    $display_text_sql = "CONCAT_WS(' - ', " . implode(", ", $safe_text_column_parts) . ") AS DisplayText";
+    
+    $sql = "SELECT {$safe_value_column}, {$display_text_sql} FROM {$safe_table_name}";
+    
+    if (!empty($condition)) { $sql .= " WHERE " . $condition; } 
+    if (!empty($order_by)) { $sql .= " ORDER BY " . $order_by; }
+
+    $stmt = $conn->prepare($sql);
+    if (!$stmt) {
+        error_log("Error preparing statement in generate_select_options for table '{$table_name}': " . $conn->error . " | SQL: " . $sql);
+        return $options_html . "<option value=''>Error loading options</option>";
+    }
+
+    if ($stmt->execute()) {
+        $result = $stmt->get_result();
+        if ($result->num_rows > 0) {
+            while ($row = $result->fetch_assoc()) {
+                $option_val_raw = $row[str_replace("`", "", $value_column)];
+                $option_val_escaped = htmlspecialchars((string)$option_val_raw, ENT_QUOTES, 'UTF-8');
+                $option_text_escaped = htmlspecialchars((string)$row['DisplayText'], ENT_QUOTES, 'UTF-8');
+                $selected_attr = ($selected_value !== null && (string)$selected_value === (string)$option_val_raw) ? 'selected' : '';
+                $options_html .= "<option value='{$option_val_escaped}' {$selected_attr}>{$option_text_escaped}</option>";
+            }
+        }
+        $result->free();
+    } else {
+         error_log("Error executing statement in generate_select_options for table '{$table_name}': " . $stmt->error . " | SQL: " . $sql);
+    }
+    $stmt->close();
+    return $options_html;
+}
+
+function get_english_day_of_week(string $day_of_week_input): string {
+    $days_map = [
+        'Thứ Hai' => 'Monday', 'Thứ Ba' => 'Tuesday', 'Thứ Tư' => 'Wednesday',
+        'Thứ Năm' => 'Thursday', 'Thứ Sáu' => 'Friday', 'Thứ Bảy' => 'Saturday', 'Chủ Nhật' => 'Sunday',
+        'Monday' => 'Monday', 'Tuesday' => 'Tuesday', 'Wednesday' => 'Wednesday',
+        'Thursday' => 'Thursday', 'Friday' => 'Friday', 'Saturday' => 'Saturday', 'Sunday' => 'Sunday',
+    ];
+    return $days_map[$day_of_week_input] ?? $day_of_week_input;
+}
+
+function get_time_slot_display_string(string $startTimeStr, string $endTimeStr): string { 
+    if (empty($startTimeStr) || empty($endTimeStr)) return 'N/A';
+    try {
+        $start = new DateTime($startTimeStr);
+        $end = new DateTime($endTimeStr);
+        return $start->format('H:i') . ' - ' . $end->format('H:i');
+    } catch (Exception $e) {
+        return 'Invalid Time Range';
+    }
+}
+
+function check_class_overlap_detailed(array $class1_details, array $class2_details): bool {
+    if (isset($class1_details['timeslot_id_db']) && isset($class2_details['timeslot_id_db'])) {
+        return $class1_details['timeslot_id_db'] === $class2_details['timeslot_id_db'];
+    }
+    error_log("Warning: check_class_overlap_detailed called with missing 'timeslot_id_db'. Class1: " . print_r($class1_details, true) . " Class2: " . print_r($class2_details, true));
+    return false; 
+} 
+
+function count_distinct_days_in_schedule(array $schedule, mysqli $conn): int {
+    if (empty($schedule)) return 0;
+    
+    $timeslot_ids = [];
+    foreach ($schedule as $event) {
+        if (isset($event['timeslot_id_db']) && is_numeric($event['timeslot_id_db'])) {
+            $timeslot_ids[] = (int)$event['timeslot_id_db'];
         }
     }
 
-    function updateProgress(percent, logText = null) {
-        const p = Math.max(0, Math.min(100, percent));
-        progressBar.style.width = p + '%';
-        progressBar.innerText = p + '%';
-        progressBar.setAttribute('aria-valuenow', p);
-        if (logText !== null && typeof logText === 'string') {
-            processLogOutput.innerHTML = logText.replace(/\n/g, '<br>');
-            processLogOutput.scrollTop = processLogOutput.scrollHeight;
-        }
-    }
-    
-    function setActiveView(viewName) {
-        tableViewContainer.style.display = viewName === 'table' ? 'block' : 'none';
-        weeklyViewContainer.style.display = viewName === 'weekly' ? 'block' : 'none';
-        dailyViewContainer.style.display = viewName === 'daily' ? 'block' : 'none';
+    if (empty($timeslot_ids)) return 0;
+
+    $unique_timeslot_ids = array_unique($timeslot_ids);
+    $placeholders = implode(',', array_fill(0, count($unique_timeslot_ids), '?'));
+    $types = str_repeat('i', count($unique_timeslot_ids));
+
+    $sql = "SELECT DISTINCT DayOfWeek FROM TimeSlots WHERE TimeSlotID IN ($placeholders)";
+    $stmt = $conn->prepare($sql);
+
+    if (!$stmt) {
+        error_log("count_distinct_days_in_schedule: Prepare failed: " . $conn->error . " | SQL: " . $sql);
+        return 0;
     }
 
-    document.querySelectorAll('input[name="viewType"]').forEach(radio => {
-        radio.addEventListener('change', function() {
-            setActiveView(this.value);
+    $stmt->bind_param($types, ...$unique_timeslot_ids);
+    if (!$stmt->execute()) {
+        error_log("count_distinct_days_in_schedule: Execute failed: " . $stmt->error);
+        $stmt->close();
+        return 0;
+    }
+    $result = $stmt->get_result();
+    
+    $distinct_days = [];
+    while ($row = $result->fetch_assoc()) {
+        $distinct_days[] = $row['DayOfWeek'];
+    }
+    
+    $stmt->close();
+    return count(array_unique($distinct_days));
+} 
+
+function calculate_total_gap_time_by_dow(array $schedule, mysqli $conn): array { 
+    if (empty($schedule)) return [];
+
+    $timeslot_ids = [];
+    foreach ($schedule as $event) {
+        if (isset($event['timeslot_id_db']) && is_numeric($event['timeslot_id_db'])) {
+            $timeslot_ids[] = (int)$event['timeslot_id_db'];
+        }
+    }
+    if (empty($timeslot_ids)) return [];
+
+    $unique_timeslot_ids = array_unique($timeslot_ids);
+    $placeholders = implode(',', array_fill(0, count($unique_timeslot_ids), '?'));
+    $types = str_repeat('i', count($unique_timeslot_ids));
+
+    $sql = "SELECT TimeSlotID, DayOfWeek, StartTime, EndTime FROM TimeSlots WHERE TimeSlotID IN ($placeholders)";
+    $stmt = $conn->prepare($sql);
+    if (!$stmt) {
+        error_log("calculate_total_gap_time_by_dow: Prepare failed: " . $conn->error . " | SQL: " . $sql);
+        return [];
+    }
+    $stmt->bind_param($types, ...$unique_timeslot_ids);
+    if (!$stmt->execute()) {
+        error_log("calculate_total_gap_time_by_dow: Execute failed: " . $stmt->error);
+        $stmt->close();
+        return [];
+    }
+    $result = $stmt->get_result();
+    
+    $slots_data = [];
+    while ($row = $result->fetch_assoc()) {
+        try {
+            $slots_data[$row['TimeSlotID']] = [
+                'DayOfWeek' => $row['DayOfWeek'],
+                'StartTime' => new DateTime($row['StartTime']),
+                'EndTime'   => new DateTime($row['EndTime'])
+            ];
+        } catch (Exception $e) {
+            error_log("Error parsing time in calculate_total_gap_time_by_dow for TimeSlotID " . $row['TimeSlotID'] . ": " . $e->getMessage());
+        }
+    }
+    $stmt->close();
+
+    $events_by_day = [];
+    foreach ($schedule as $event) {
+        if (isset($event['timeslot_id_db']) && isset($slots_data[$event['timeslot_id_db']])) {
+            $slot_info = $slots_data[$event['timeslot_id_db']];
+            $events_by_day[$slot_info['DayOfWeek']][] = $slot_info;
+        }
+    }
+
+    $gap_times_by_day = [];
+    foreach ($events_by_day as $day => $day_events) {
+        if (count($day_events) < 2) {
+            $gap_times_by_day[$day] = 0;
+            continue;
+        }
+
+        usort($day_events, function ($a, $b) {
+            return $a['StartTime'] <=> $b['StartTime'];
         });
-    });
 
-    function pollProgress() {
-        fetch('get_scheduler_progress.php')
-            .then(response => {
-                if (!response.ok) {
-                     return response.text().then(text => {
-                        throw new Error(`Polling HTTP error! Status: ${response.status}. Response: ${text.substring(0,300)}`);
-                    });
-                }
-                return response.json();
-            })
-            .then(data => {
-                console.log("Poll progress data:", data);
-                if (!data || typeof data.status === 'undefined') {
-                    displayMessage('Polling Error: Invalid response from progress checker.', 'danger');
-                    stopPollingAndReset(); return;
-                }
+        $total_daily_gap = 0;
+        for ($i = 0; $i < count($day_events) - 1; $i++) {
+            $event1_end = $day_events[$i]['EndTime'];
+            $event2_start = $day_events[$i+1]['StartTime'];
+            if ($event2_start > $event1_end) { 
+                $interval = $event1_end->diff($event2_start);
+                $gap_minutes = ($interval->h * 60) + $interval->i;
+                $total_daily_gap += $gap_minutes;
+            }
+        }
+        $gap_times_by_day[$day] = $total_daily_gap;
+    }
+    return $gap_times_by_day;
+} 
 
-                if (data.status === 'error_auth' || data.status === 'error_file_ref' || data.status === 'error_progress_script') {
-                    displayMessage('Polling Error: ' + (data.message || 'Unknown progress error.'), 'danger');
-                    stopPollingAndReset(); return;
-                }
+function select_best_schedule_for_student(array $schedules, mysqli $conn): ?array { 
+    if (empty($schedules)) return null;
 
-                updateProgress(data.progress_percent || 0, data.log_content || processLogOutput.textContent);
+    $best_schedule = null;
+    $min_distinct_days = PHP_INT_MAX;
+    $min_total_gap_at_min_days = PHP_INT_MAX;
 
-                if (data.status === 'completed_success') {
-                    displayMessage(data.message || 'Scheduler finished successfully. Fetching final results...', 'success');
-                    stopPollingAndReset(false);
-                    if (data.output_file) fetchResults(data.output_file);
-                    else displayMessage('Completed but output file reference is missing!', 'warning');
-                } else if (data.status === 'completed_error' || data.status === 'error_php_fatal' || data.status === 'error_php_setup') { // Thêm error_php_setup
-                    displayMessage(data.message || 'Scheduler process finished with errors.', 'danger');
-                    stopPollingAndReset(false);
-                    resultsSection.style.display = 'block'; // Hiển thị section để có thể thấy log / metrics lỗi
-                    if (data.output_file) fetchResults(data.output_file);
-                    else { // Nếu không có output file, ít nhất hiển thị log
-                        resultMetrics.innerHTML = "<p class='text-danger'>Could not retrieve detailed metrics due to an error.</p>";
-                        scheduleTableContainer.innerHTML = "";
-                        scheduleWeeklyVisualContainer.innerHTML = "";
-                        scheduleDailyVisualContainer.innerHTML = "";
+    foreach ($schedules as $current_schedule_candidate) {
+        if (empty($current_schedule_candidate) || !is_array($current_schedule_candidate)) continue;
+
+        $distinct_days = count_distinct_days_in_schedule($current_schedule_candidate, $conn);
+        $gap_times_by_dow = calculate_total_gap_time_by_dow($current_schedule_candidate, $conn);
+        $total_gap_time = array_sum($gap_times_by_dow);
+
+        if ($distinct_days < $min_distinct_days) {
+            $min_distinct_days = $distinct_days;
+            $min_total_gap_at_min_days = $total_gap_time;
+            $best_schedule = $current_schedule_candidate;
+        } elseif ($distinct_days === $min_distinct_days) {
+            if ($total_gap_time < $min_total_gap_at_min_days) {
+                $min_total_gap_at_min_days = $total_gap_time;
+                $best_schedule = $current_schedule_candidate;
+            }
+        }
+    }
+    return $best_schedule; 
+} 
+
+function generate_possible_schedules_for_student(
+    mysqli $conn, 
+    array $courses_with_class_options, 
+    array $current_schedule_build = [], 
+    int $course_idx = 0, 
+    array &$all_valid_schedules_ref = [], 
+    ?array $course_ids_to_process_list = null
+): void { 
+    if ($course_ids_to_process_list === null) { 
+        $course_ids_to_process_list = array_keys($courses_with_class_options);
+    }
+
+    if ($course_idx == count($course_ids_to_process_list)) {
+        if (!empty($current_schedule_build)) {
+            $is_schedule_internally_valid = true;
+            for ($i = 0; $i < count($current_schedule_build); $i++) {
+                for ($j = $i + 1; $j < count($current_schedule_build); $j++) {
+                    if (check_class_overlap_detailed($current_schedule_build[$i], $current_schedule_build[$j])) {
+                        $is_schedule_internally_valid = false;
+                        break 2;
                     }
-                } else if (data.status !== 'running_background' && data.status !== 'initiating_background' && data.status !== 'running_php_pre_python' && data.status !== 'python_running') {
-                    console.warn("Polling stopped due to non-running status: ", data.status);
-                    stopPollingAndReset(false);
                 }
-            })
-            .catch(error => {
-                console.error('Polling fetch error:', error);
-                displayMessage('Error while polling for progress: ' + error.message, 'danger');
-                stopPollingAndReset();
-            });
+            }
+            if ($is_schedule_internally_valid) {
+                $all_valid_schedules_ref[] = $current_schedule_build;
+            }
+        }
+        return;
     }
+
+    $current_course_id_to_process = $course_ids_to_process_list[$course_idx];
     
-    function renderMetrics(metrics) {
-        let html = '<h4>Schedule Metrics</h4>';
-        if (metrics.overall_performance) {
-            html += `<h5>Overall:</h5><ul>
-                        <li>Total Execution Time: ${metrics.overall_performance.total_execution_time_seconds !== null ? metrics.overall_performance.total_execution_time_seconds + 's' : 'N/A'}</li>
-                        <li>Events in Final Schedule: ${metrics.overall_performance.num_events_in_final_schedule || 0}</li>
-                     </ul>`;
-        }
-        if (metrics.cp_solver_summary) {
-            html += `<h5>CP Solver Summary:</h5><ul>
-                        <li>Status: ${metrics.cp_solver_summary.solver_status || 'N/A'}</li>
-                        <li>Time: ${metrics.cp_solver_summary.solve_time_seconds !==null ? metrics.cp_solver_summary.solve_time_seconds + 's' : 'N/A'} (Build: ${metrics.cp_solver_summary.model_build_time_seconds !==null ? metrics.cp_solver_summary.model_build_time_seconds + 's' : 'N/A'})</li>
-                        <li>Items Scheduled: ${metrics.cp_solver_summary.num_items_successfully_scheduled_by_cp || 0} / ${metrics.cp_solver_summary.num_items_targeted_for_cp_solver || 0}</li>
-                     </ul>`;
-        }
-         if (metrics.ga_solver_summary) {
-            html += `<h5>GA Solver Summary:</h5><ul>
-                        <li>Final Penalty Score: ${metrics.ga_solver_summary.final_penalty_score !== null ? parseFloat(metrics.ga_solver_summary.final_penalty_score).toFixed(2) : 'N/A'}</li>
-                        ${metrics.ga_solver_summary.ga_hard_constraints_violated_in_final !== undefined ? `<li>Hard Constraints Violated: ${metrics.ga_solver_summary.ga_hard_constraints_violated_in_final ? '<span class="text-danger fw-bold">Yes</span>' : '<span class="text-success">No</span>'}</li>` : '' }
-                     </ul>`;
-            if (metrics.ga_solver_summary.detailed_soft_constraint_metrics && Object.keys(metrics.ga_solver_summary.detailed_soft_constraint_metrics).length > 0) {
-                html += '<h6>GA Soft Constraint Details:</h6><div class="table-responsive"><table class="table table-sm table-bordered table-striped" style="max-width: 600px;"><thead><tr><th>Constraint</th><th>Count</th><th>Penalty Contribution</th></tr></thead><tbody>';
-                for (const sc_name in metrics.ga_solver_summary.detailed_soft_constraint_metrics) {
-                    const detail = metrics.ga_solver_summary.detailed_soft_constraint_metrics[sc_name];
-                    html += `<tr><td>${sc_name.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</td><td>${detail.count || 0}</td><td>${detail.penalty_contribution !== null ? parseFloat(detail.penalty_contribution).toFixed(2) : 'N/A'}</td></tr>`;
+    if (isset($courses_with_class_options[$current_course_id_to_process]) && !empty($courses_with_class_options[$current_course_id_to_process])) {
+        foreach ($courses_with_class_options[$current_course_id_to_process] as $single_class_option) {
+            if (!isset($single_class_option['timeslot_id_db'])) {
+                error_log("generate_possible_schedules_for_student: class_option for course {$current_course_id_to_process} is missing 'timeslot_id_db'.");
+                continue; 
+            }
+
+            $can_add_this_option = true;
+            foreach ($current_schedule_build as $existing_class_in_schedule) {
+                if (check_class_overlap_detailed($existing_class_in_schedule, $single_class_option)) {
+                    $can_add_this_option = false;
+                    break;
                 }
-                html += '</tbody></table></div>';
-            } else if (metrics.ga_solver_summary.final_penalty_score === 0 || metrics.ga_solver_summary.final_penalty_score === null ) {
-                 html += '<p class="text-success">No soft constraint violations reported by GA.</p>';
+            }
+
+            if ($can_add_this_option) {
+                $new_schedule_with_this_option = array_merge($current_schedule_build, [$single_class_option]);
+                generate_possible_schedules_for_student($conn, $courses_with_class_options, $new_schedule_with_this_option, $course_idx + 1, $all_valid_schedules_ref, $course_ids_to_process_list);
             }
         }
-        resultMetrics.innerHTML = html;
+    } else {
+        generate_possible_schedules_for_student($conn, $courses_with_class_options, $current_schedule_build, $course_idx + 1, $all_valid_schedules_ref, $course_ids_to_process_list);
+    }
+} 
+
+function selected_if_match($current_value, $option_value): void { 
+    if ((string)$current_value === (string)$option_value) { echo ' selected'; } 
+}
+
+function call_python_scheduler(
+    string $python_executable, 
+    string $python_script_absolute_path, 
+    string $input_json_content, 
+    string $python_input_filename, 
+    string $python_output_filename, 
+    int $timeout_seconds = 360 
+): array {
+    $result = ['status' => 'error_php_setup', 'message' => 'PHP Error: Initial setup for Python execution failed.', 'data' => null, 'debug_stdout' => '', 'debug_stderr' => ''];
+
+    if (empty(trim($python_executable))) { 
+        $result['message'] = "PHP Error: Python executable path is not configured."; return $result; 
+    }
+    if (!file_exists($python_script_absolute_path) || !is_readable($python_script_absolute_path)) { 
+        $result['message'] = "PHP Error: Python script not found or not readable at: " . htmlspecialchars($python_script_absolute_path); return $result; 
     }
 
-    function renderTableView(scheduleData) {
-         if (!scheduleData || scheduleData.length === 0) {
-            scheduleTableContainer.innerHTML = "<p class='text-muted'>No schedule data to display or an empty schedule was generated.</p>";
-            return;
-        }
-        fetch('render_schedule_ajax.php', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ schedule_events: scheduleData, view_type: 'table_html' })
-        })
-        .then(response => response.text()) 
-        .then(htmlTable => { scheduleTableContainer.innerHTML = htmlTable; })
-        .catch(error => { scheduleTableContainer.innerHTML = "<p class='text-danger'>Error rendering schedule table.</p>"; console.error('Error rendering table view:', error);});
-    }
+    $python_script_dir = dirname($python_script_absolute_path);
+    $python_input_dir_absolute = $python_script_dir . DIRECTORY_SEPARATOR . 'input_data'; 
+    $python_output_dir_absolute = $python_script_dir . DIRECTORY_SEPARATOR . 'output_data';
 
-    function renderWeeklyView(scheduleData) {
-         if (!scheduleData || scheduleData.length === 0) {
-            scheduleWeeklyVisualContainer.innerHTML = "<p class='text-muted'>No data for weekly view.</p>"; return;
-        }
-        fetch('render_schedule_ajax.php', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ schedule_events: scheduleData, view_type: 'weekly_visual_html' })
-        })
-        .then(response => response.text()) 
-        .then(htmlVisual => { scheduleWeeklyVisualContainer.innerHTML = htmlVisual; })
-        .catch(error => { scheduleWeeklyVisualContainer.innerHTML = "<p class='text-danger'>Error rendering weekly visual schedule.</p>"; console.error('Error rendering weekly view:', error);});
-    }
-
-    function renderDailyView(scheduleData) {
-         if (!scheduleData || scheduleData.length === 0) {
-            scheduleDailyVisualContainer.innerHTML = "<p class='text-muted'>No data for daily view.</p>"; return;
-        }
-         fetch('render_schedule_ajax.php', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ schedule_events: scheduleData, view_type: 'daily_visual_html' })
-        })
-        .then(response => response.text()) 
-        .then(htmlVisual => { scheduleDailyVisualContainer.innerHTML = htmlVisual; })
-        .catch(error => { scheduleDailyVisualContainer.innerHTML = "<p class='text-danger'>Error rendering daily visual schedule.</p>"; console.error('Error rendering daily view:', error);});
-    }
-    
-    function fetchResults(outputFilename) {
-        resultsSection.style.display = 'block';
-        setActiveView('table'); 
-        if(viewTableBtnRadio) viewTableBtnRadio.checked = true;
-
-        scheduleTableContainer.innerHTML = "<p class='text-info p-2'><i class='fas fa-spinner fa-spin'></i> Loading table view...</p>";
-        scheduleWeeklyVisualContainer.innerHTML = "<p class='text-info p-2'><i class='fas fa-spinner fa-spin'></i> Loading weekly view...</p>";
-        scheduleDailyVisualContainer.innerHTML = "<p class='text-info p-2'><i class='fas fa-spinner fa-spin'></i> Loading daily view...</p>";
-        resultMetrics.innerHTML = "";
-
-        fetch(`get_scheduler_result.php?file=${encodeURIComponent(outputFilename)}`)
-            .then(response => {
-                if (!response.ok) return response.text().then(text => {throw new Error(`Fetch results HTTP error! Status: ${response.status}. Response: ${text.substring(0,300)}`);});
-                return response.json();
-            })
-            .then(res => {
-                console.log("Fetched results data:", res);
-                if (res.status === 'success' && res.data) {
-                    const py_status = res.data.status || "unknown_python_status";
-                    const py_message = res.data.message || "No message from Python execution.";
-                    displayMessage(`Python process finished: ${py_message} (Status: ${py_status})`, py_status.includes('success') ? 'success' : 'warning');
-
-                    const schedule = res.data.final_schedule || [];
-                    const metrics = res.data.metrics || {};
-                    renderMetrics(metrics);
-                    renderTableView(schedule); 
-                    renderWeeklyView(schedule);
-                    renderDailyView(schedule);
-                } else {
-                    displayMessage('Error processing results: ' + (res.message || 'Unknown error from get_scheduler_result.php'), 'danger');
-                    scheduleTableContainer.innerHTML = `<p class='text-danger p-2'>Could not load schedule data. ${res.message || ''}</p>`;
-                    scheduleWeeklyVisualContainer.innerHTML = ''; scheduleDailyVisualContainer.innerHTML = '';
-                }
-            })
-            .catch(error => {
-                console.error('Fetch results error:', error);
-                displayMessage('Error fetching schedule results: ' + error.message, 'danger');
-                scheduleTableContainer.innerHTML = `<p class='text-danger p-2'>Could not load schedule due to a network or parsing error.</p>`;
-                scheduleWeeklyVisualContainer.innerHTML = ''; scheduleDailyVisualContainer.innerHTML = '';
-            });
-    }
-
-    function stopPollingAndReset(resetUI = true) {
-        if (progressInterval) {
-            clearInterval(progressInterval);
-            progressInterval = null;
-        }
-        runBtn.disabled = false;
-    }
-
-    configForm.addEventListener('submit', function (e) {
-        e.preventDefault();
-        schedulerMessages.innerHTML = ''; 
-        resultsSection.style.display = 'none'; 
-        setActiveView('table');
-        if(viewTableBtnRadio) viewTableBtnRadio.checked = true;
-        
-        resultMetrics.innerHTML = '';
-        scheduleTableContainer.innerHTML = "<p class='text-muted'>Schedule will be displayed here.</p>";
-        scheduleWeeklyVisualContainer.innerHTML = "<p class='text-muted'>Weekly schedule will be displayed here.</p>";
-        scheduleDailyVisualContainer.innerHTML = "<p class='text-muted'>Daily schedule will be displayed here.</p>";
-        processLogOutput.textContent = ''; 
-
-        const formData = new FormData(configForm);
-        const configPayload = {};
-        for (let [key, value] of formData.entries()) {
-            const element = document.getElementsByName(key)[0]; // Lấy element để kiểm tra type
-            const type = element ? element.type : 'text';
-
-            if (key === 'ga_allow_hard_constraint_violations') { 
-                configPayload[key] = element.checked; // Giá trị boolean từ checkbox
-            } else if (type === 'number') {
-                 if (value.includes('.')) configPayload[key] = parseFloat(value);
-                 else configPayload[key] = parseInt(value);
-            } else {
-                configPayload[key] = value;
-            }
-        }
-        // Đảm bảo checkbox nếu không check thì gửi false
-        if (!formData.has('ga_allow_hard_constraint_violations')) {
-             configPayload['ga_allow_hard_constraint_violations'] = false;
-        }
-        
-        if (!configPayload.semester_id) { 
-            displayMessage('Please select a target semester.', 'warning');
-            return; 
-        }
-        configPayload.semester_id_to_load = configPayload.semester_id;
-        delete configPayload.semester_id;
-
-        runBtn.disabled = true;
-        progressSection.style.display = 'block';
-        updateProgress(1, 'Initiating scheduler process via AJAX...'); 
-
-        fetch('run_scheduler_ajax.php', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(configPayload)
-        })
-        .then(response => {
-            console.log("Raw response from run_scheduler_ajax.php (initiating):", response);
-            if (!response.ok) {
-                 return response.text().then(text => {throw new Error(`Server error ${response.status} (initiating): ${text.substring(0,300)}`);});
-            }
-            return response.json();
-        })
-        .then(data => {
-            console.log("Parsed JSON from run_scheduler_ajax.php (initiating):", data);
-            if (data.status === 'background_initiated') { // PHP đã khởi chạy Python nền
-                displayMessage(data.message || 'Background process started. Monitoring...', 'info');
-                if (progressInterval) clearInterval(progressInterval);
-                progressInterval = setInterval(pollProgress, 3000); 
+    foreach ([$python_input_dir_absolute, $python_output_dir_absolute] as $dir_path) {
+        if (!is_dir($dir_path)) { 
+            if (!@mkdir($dir_path, 0775, true) && !is_dir($dir_path)) { 
+                $result['message'] = "PHP Error: Could not create Python I/O directory: " . htmlspecialchars($dir_path); return $result; 
             } 
-            // Xử lý trường hợp Python chạy quá nhanh và PHP đã đợi xong
-            else if (data.status === 'success' && data.output_file) { 
-                 displayMessage(data.message || 'Process completed very quickly.', 'success');
-                 updateProgress(100, (data.stdout || '') + (data.stderr || '\nProcess finished.'));
-                 if(data.stdout || data.stderr) processLogOutput.innerHTML = ((data.stdout || '') + (data.stderr || '')).replace(/\n/g, '<br>');
-                 stopPollingAndReset(false);
-                 fetchResults(data.output_file);
-            }
-            else if (data.status && (data.status.startsWith('error') || data.status.startsWith('completed_error'))) { 
-                displayMessage('Error initiating/running scheduler: ' + data.message, 'danger');
-                updateProgress(100, (data.stdout || '') + (data.stderr || '\nProcess finished with error.'));
-                 if(data.stdout || data.stderr) processLogOutput.innerHTML = ((data.stdout || '') + (data.stderr || '')).replace(/\n/g, '<br>');
-                stopPollingAndReset(false);
-                if (data.output_file && data.final_data_summary) {
-                     fetchResults(data.output_file);
-                }
-            }
-            else { // Trạng thái không mong muốn
-                 displayMessage('Unexpected response when initiating scheduler: ' + (data.message || JSON.stringify(data).substring(0,100)), 'warning');
-                 stopPollingAndReset();
-            }
-        })
-        .catch(error => {
-            console.error('Submit form fetch error:', error);
-            displayMessage('Failed to initiate scheduler process: ' + error.message, 'danger');
-            stopPollingAndReset();
-        });
-    });
+        }
+        if (!is_writable($dir_path)) { 
+            $result['message'] = "PHP Error: Python I/O directory is not writable: " . htmlspecialchars($dir_path); return $result; 
+        }
+    }
 
-    // ----- KẾT THÚC PHẦN JAVASCRIPT GIỮ NGUYÊN -----
-});
-</script>
+    $input_file_for_python_abs = $python_input_dir_absolute . DIRECTORY_SEPARATOR . $python_input_filename; 
+    $output_file_from_python_abs = $python_output_dir_absolute . DIRECTORY_SEPARATOR . $python_output_filename;
+
+    if (file_put_contents($input_file_for_python_abs, $input_json_content) === false) { 
+        $result['message'] = "PHP Error: Could not write to Python input file: " . htmlspecialchars($input_file_for_python_abs); return $result; 
+    }
+    if (file_exists($output_file_from_python_abs)) { 
+        @unlink($output_file_from_python_abs); 
+    }
+
+    $command = escapeshellcmd($python_executable) . ' ' . escapeshellarg($python_script_absolute_path) . ' ' . escapeshellarg($python_input_filename); 
+    
+    $descriptorspec = [0 => ["pipe", "r"], 1 => ["pipe", "w"], 2 => ["pipe", "w"]]; $pipes = [];
+    $process = @proc_open($command, $descriptorspec, $pipes, $python_script_dir, null); 
+    
+    $stdout_content = ''; $stderr_content = ''; $start_exec_time = microtime(true);
+
+    if (is_resource($process)) {
+        fclose($pipes[0]); 
+        stream_set_blocking($pipes[1], false); 
+        stream_set_blocking($pipes[2], false); 
+
+        while (true) {
+            $proc_status = proc_get_status($process);
+            if (!$proc_status || !$proc_status['running']) { 
+                $stdout_content .= stream_get_contents($pipes[1]); 
+                $stderr_content .= stream_get_contents($pipes[2]);
+                break; 
+            }
+            if ($timeout_seconds > 0 && (microtime(true) - $start_exec_time) > $timeout_seconds) {
+                proc_terminate($process, 9); 
+                $stderr_content .= "\nPHP Error: Python script execution timed out after {$timeout_seconds} seconds and was terminated.";
+                $stdout_content .= stream_get_contents($pipes[1]); 
+                $stderr_content .= stream_get_contents($pipes[2]);
+                break;
+            }
+            
+            $read_stdout_chunk = fread($pipes[1], 8192); if ($read_stdout_chunk !== false && $read_stdout_chunk !== '') $stdout_content .= $read_stdout_chunk;
+            $read_stderr_chunk = fread($pipes[2], 8192); if ($read_stderr_chunk !== false && $read_stderr_chunk !== '') $stderr_content .= $read_stderr_chunk;
+
+            if (($read_stdout_chunk === '' || $read_stdout_chunk === false) && ($read_stderr_chunk === '' || $read_stderr_chunk === false) && $proc_status['running']) {
+                usleep(100000);
+            }
+        }
+        fclose($pipes[1]); fclose($pipes[2]);
+        $exit_code = $proc_status['exitcode'] ?? proc_close($process);
+
+        $result['debug_stdout'] = trim($stdout_content); 
+        $result['debug_stderr'] = trim($stderr_content);
+
+        if ($exit_code === 0) { 
+            if (file_exists($output_file_from_python_abs)) {
+                $json_output_content_py = @file_get_contents($output_file_from_python_abs);
+                if ($json_output_content_py === false) { 
+                    $result['message'] = "PHP Error: Python completed (exit 0), but could not read output file: " . htmlspecialchars($output_file_from_python_abs); 
+                    $result['status'] = 'error_php_read_output'; 
+                } else {
+                    $output_data_array_py = json_decode($json_output_content_py, true);
+                    if (json_last_error() === JSON_ERROR_NONE && isset($output_data_array_py['status'])) {
+                        $python_reported_status = $output_data_array_py['status'];
+                        $result['status'] = (stripos($python_reported_status, 'success') !== false) ? 'success' : 'error_python_logic';
+                        $result['message'] = $output_data_array_py['message'] ?? 'No specific message from Python.'; 
+                        $result['data'] = $output_data_array_py;
+                    } else { 
+                        $result['message'] = "PHP Error: Could not decode JSON from Python. JSON Error: " . json_last_error_msg(); 
+                        $result['raw_output_from_python'] = substr(htmlspecialchars($json_output_content_py, ENT_QUOTES, 'UTF-8'), 0, 1000); 
+                        $result['status'] = 'error_php_json_decode'; 
+                    }
+                }
+            } else { 
+                $result['message'] = "PHP Error: Python completed (exit 0), but output file not found: " . htmlspecialchars($output_file_from_python_abs); 
+                $result['status'] = 'error_python_no_output_file'; 
+                if(!empty($result['debug_stderr'])) { $result['message'] .= " Python Stderr: " . $result['debug_stderr']; } 
+                elseif(!empty($result['debug_stdout'])) { $result['message'] .= " Python Stdout: " . $result['debug_stdout']; }
+            }
+        } else { 
+            $result['message'] = "PHP Error: Python script exited with error code " . $exit_code . "."; 
+            $result['status'] = 'error_python_exit_code'; 
+            if (!empty($result['debug_stderr'])) { $result['message'] .= " Python Stderr: " . $result['debug_stderr']; } 
+            elseif(!empty($result['debug_stdout'])) { $result['message'] .= " Python Stdout: " . $result['debug_stdout']; }
+        }
+    } else { 
+        $result['message'] = "PHP Error: Could not execute Python script (proc_open failed). Check PHP configuration or permissions. Command attempted: " . htmlspecialchars($command); 
+        $result['status'] = 'error_php_proc_open'; 
+    }
+    return $result;
+}
+
+?>

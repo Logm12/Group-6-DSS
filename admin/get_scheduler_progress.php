@@ -4,150 +4,171 @@ if (session_status() == PHP_SESSION_NONE) {
     session_start();
 }
 
-// QUAN TRỌNG: Require functions.php để có is_logged_in() và các hàm session khác
-require_once __DIR__ . '/../includes/functions.php'; 
+require_once __DIR__ . '/../includes/functions.php';
 
-// Đặt header Content-Type lên đầu, nhưng sau khi include và session_start
-// để đảm bảo không có output nào trước đó.
-// Tuy nhiên, nếu có lỗi nghiêm trọng trong functions.php, header này có thể không được gửi.
-// Cách tốt nhất là đảm bảo các file include không tự ý echo.
 if (!headers_sent()) {
     header('Content-Type: application/json');
 }
 
-
-// Khởi tạo response mặc định phòng trường hợp lỗi sớm
 $response = [
     'status' => 'error_unknown_progress_state',
-    'message' => 'Could not determine scheduler progress.',
+    'message' => 'Could not determine scheduler progress state.',
     'progress_percent' => 0,
-    'log_content' => '',
+    'log_content' => '', // Will send the full log content
     'output_file' => null
 ];
 
 try {
     if (!is_logged_in() || get_current_user_role() !== 'admin') {
-        // Ném exception thay vì echo trực tiếp để try-catch bên ngoài xử lý
-        throw new Exception("Unauthorized access for progress check.");
+        // Client-side should ideally prevent unauthorized polling, but good to have server check
+        $response['status'] = 'error_auth';
+        $response['message'] = "Unauthorized access for progress check.";
+        // session_write_close(); // Close session before exiting
+        // echo json_encode($response);
+        // exit;
+        throw new Exception("Unauthorized access for progress check."); // Throw to be caught by main catch
     }
 
     $current_status_from_session = $_SESSION['scheduler_status'] ?? 'idle';
-    $log_file_relative = $_SESSION['scheduler_log_file'] ?? null;
-    $output_file_relative = $_SESSION['scheduler_output_file'] ?? null;
+    $log_file_relative_path = $_SESSION['scheduler_log_file'] ?? null;
+    $output_file_relative_path = $_SESSION['scheduler_output_file'] ?? null;
+    // Use the progress from session as a base, Python log might update it further
     $progress_percent_from_session = $_SESSION['scheduler_progress_percent'] ?? 0;
 
-    // Cập nhật response dựa trên thông tin session
     $response['status'] = $current_status_from_session;
-    $response['progress_percent'] = $progress_percent_from_session;
-    $response['output_file'] = $output_file_relative;
+    $response['progress_percent'] = (int)$progress_percent_from_session;
+    $response['output_file'] = $output_file_relative_path; // Pass this back for JS
 
-    if ($current_status_from_session === 'running_background' || $current_status_from_session === 'initiating_background') {
-        if ($log_file_relative) {
-            $python_algo_dir = realpath(__DIR__ . '/../python_algorithm');
-            if (!$python_algo_dir) { // Kiểm tra xem thư mục python có tồn tại không
-                 throw new Exception("Python algorithm directory not found when checking progress.");
-            }
-            $log_file_absolute = $python_algo_dir . DIRECTORY_SEPARATOR . $log_file_relative;
+    $python_script_has_definitely_finished = false; // Flag
 
-            if (file_exists($log_file_absolute)) {
-                $log_content_raw = @file_get_contents($log_file_absolute); 
-                if ($log_content_raw !== false) {
-                    $response['log_content'] = htmlspecialchars($log_content_raw); // Gửi toàn bộ log
-                    
-                    $parsed_percent = $progress_percent_from_session; 
-                    if (preg_match_all('/PYTHON_PROGRESS: Progress: (\d+)% complete/i', $log_content_raw, $matches)) {
-                        $last_match = end($matches[1]);
-                        if (is_numeric($last_match)) {
-                            $parsed_percent = (int)$last_match;
+    // Only read log if process is expected to be active or recently finished
+    if (in_array($current_status_from_session, ['running_background', 'initiating_background', 'python_running']) ||
+        ($current_status_from_session === 'completed_success' || $current_status_from_session === 'completed_error')) { // Also check log if recently completed to ensure latest state
+        
+        if ($log_file_relative_path) {
+            $python_algo_base_dir = realpath(__DIR__ . '/../python_algorithm');
+            if (!$python_algo_base_dir) {
+                // This is a server config issue, should be logged
+                error_log("get_scheduler_progress.php CRITICAL: Python algorithm base directory not found.");
+                $response['status'] = 'error_file_ref'; // More specific error
+                $response['message'] = 'Server configuration error: Python algorithm directory not found.';
+                // No further log reading possible
+            } else {
+                $log_file_absolute_path = $python_algo_base_dir . DIRECTORY_SEPARATOR . $log_file_relative_path;
+
+                if (file_exists($log_file_absolute_path)) {
+                    $log_content_raw = @file_get_contents($log_file_absolute_path);
+                    if ($log_content_raw !== false) {
+                        $response['log_content'] = $log_content_raw; // Send the raw log (JS will handle htmlspecialchars if needed for display)
+
+                        // --- Improved Progress Parsing & Completion Detection ---
+                        $python_reported_progress = $progress_percent_from_session; // Start with session progress
+
+                        // Look for the last "PYTHON_PROGRESS: Progress: X%" line
+                        if (preg_match_all('/PYTHON_PROGRESS: Progress: (\d+)%/im', $log_content_raw, $matches)) {
+                            $last_progress_match = end($matches[1]);
+                            if (is_numeric($last_progress_match)) {
+                                $python_reported_progress = max($python_reported_progress, (int)$last_progress_match);
+                            }
                         }
-                    }
+                        $response['progress_percent'] = $python_reported_progress;
 
-                    $is_python_script_finished = (stripos($log_content_raw, "END OF PYTHON SCHEDULER SCRIPT EXECUTION") !== false);
-
-                    if ($parsed_percent >= 100 || $is_python_script_finished) {
-                        $response['progress_percent'] = 100; // Luôn là 100 khi log báo xong
-
-                        if ($output_file_relative) {
-                             $output_file_absolute = $python_algo_dir . DIRECTORY_SEPARATOR . $output_file_relative;
-                             if (file_exists($output_file_absolute)) {
-                                $output_json_content = @file_get_contents($output_file_absolute);
-                                if ($output_json_content) {
-                                    $output_data_py = json_decode($output_json_content, true);
-                                    if (isset($output_data_py['status'])) {
-                                        if (strpos($output_data_py['status'], 'success') === 0) {
-                                            $response['status'] = 'completed_success';
-                                            $response['message'] = $output_data_py['message'] ?? 'Python process completed successfully.';
+                        // Check for Python's explicit end signal
+                        // Adjusted to look for the specific string from main_solver.py
+                        if (stripos($log_content_raw, "--- PYTHON SCHEDULER SCRIPT EXECUTION FINISHED ---") !== false) {
+                            $python_script_has_definitely_finished = true;
+                            $response['progress_percent'] = 100; // If Python says it finished, progress is 100%
+                        }
+                        
+                        // --- Determine Overall Status based on Python's completion and output file ---
+                        if ($python_script_has_definitely_finished) {
+                            if ($output_file_relative_path) {
+                                $output_file_absolute_path = $python_algo_base_dir . DIRECTORY_SEPARATOR . $output_file_relative_path;
+                                if (file_exists($output_file_absolute_path)) {
+                                    $output_json_content = @file_get_contents($output_file_absolute_path);
+                                    if ($output_json_content !== false) {
+                                        $decoded_output = json_decode($output_json_content, true);
+                                        if (json_last_error() === JSON_ERROR_NONE && isset($decoded_output['status'])) {
+                                            if (stripos($decoded_output['status'], 'success') !== false) {
+                                                $response['status'] = 'completed_success';
+                                                $response['message'] = $decoded_output['message'] ?? 'Python process completed successfully.';
+                                            } else { // Python reported an error in its own output file
+                                                $response['status'] = 'completed_error';
+                                                $response['message'] = $decoded_output['message'] ?? 'Python process completed with an internal error.';
+                                            }
                                         } else {
                                             $response['status'] = 'completed_error';
-                                            $response['message'] = $output_data_py['message'] ?? 'Python process completed with an internal error reported in output file.';
+                                            $response['message'] = 'Python output file is invalid or missing status key.';
                                         }
                                     } else {
                                         $response['status'] = 'completed_error';
-                                        $response['message'] = 'Python output file is missing status information.';
+                                        $response['message'] = 'Python process finished, but its output file is unreadable.';
                                     }
                                 } else {
-                                     $response['status'] = 'completed_error';
-                                     $response['message'] = 'Python process log indicates completion, but result file is unreadable.';
+                                    // Python log says finished, but output file NOT found. This is a problem.
+                                    $response['status'] = 'completed_error';
+                                    $response['message'] = 'Python process finished (per log), but output file is missing.';
                                 }
-                             } else {
-                                 $response['message'] = 'Python log indicates completion, but output file is not yet found by progress checker. Waiting...';
-                                 // Giữ status là running_background để client tiếp tục poll, Python có thể đang ghi file output
-                                 // Hoặc, nếu muốn coi đây là lỗi ngay:
-                                 // $response['status'] = 'completed_error';
-                                 // $response['message'] = 'Python log indicates completion, but output file not found.';
-                             }
-                        } else {
-                            $response['status'] = 'completed_error'; 
-                            $response['message'] = 'Python process seems complete but output file reference is missing in session.';
+                            } else { // Python finished but no output file reference
+                                $response['status'] = 'completed_error';
+                                $response['message'] = 'Python process finished, but output file reference is missing in session.';
+                            }
+                        } elseif (in_array($current_status_from_session, ['running_background', 'initiating_background', 'python_running'])) {
+                             // If not definitively finished by log marker, and session says it's running, keep it running.
+                            $response['status'] = 'running_background'; // Or 'python_running' if more granular status is useful
+                            $response['message'] = 'Processing... Current progress from log.';
                         }
-                    } else { // Chưa xong, vẫn đang chạy
-                        $response['progress_percent'] = max($progress_percent_from_session, $parsed_percent); // Lấy % lớn hơn
-                        $response['status'] = 'running_background'; // Đảm bảo status là đang chạy
+                        // If current_status_from_session was already 'completed_success' or 'completed_error',
+                        // and python_script_has_definitely_finished is false (e.g. log got truncated/corrupted),
+                        // we should probably trust the session's completed status.
+                        // The logic above handles re-evaluating if log shows completion.
+
+                    } else { // Log file exists but couldn't be read
+                        $response['log_content'] = "Error: Could not read content from progress log file at " . htmlspecialchars($log_file_absolute_path);
+                        $response['message'] = "Reading progress log (file exists, but unreadable)...";
+                        // Don't change status, let JS retry. If persists, JS might timeout.
                     }
-                    // Cập nhật session với thông tin mới nhất
-                    $_SESSION['scheduler_progress_percent'] = $response['progress_percent'];
-                    $_SESSION['scheduler_status'] = $response['status'];
-                } else {
-                     $response['log_content'] = "Could not read progress log file (empty or read error): " . htmlspecialchars($log_file_absolute);
-                     $response['message'] = "Reading progress log..."; // Vẫn có thể đang ghi
+                } else { // Log file path known, but file does not exist yet
+                     if ($current_status_from_session === 'initiating_background' || $current_status_from_session === 'running_background') {
+                        $response['log_content'] = "Progress log file not yet available. Expected at: " . htmlspecialchars($log_file_absolute_path ?? 'N/A');
+                        $response['message'] = "Waiting for process to generate log file...";
+                     } else {
+                        // If status is e.g. completed_success but log file is missing, that's odd.
+                        $response['log_content'] = "Progress log file missing despite process state: " . $current_status_from_session;
+                     }
                 }
-            } else {
-                $response['log_content'] = "Progress log file not yet available. Path: " . htmlspecialchars($log_file_absolute);
-                $response['message'] = "Waiting for process to generate log...";
             }
-        } else if ($current_status_from_session === 'running_background' || $current_status_from_session === 'initiating_background') {
-             // Log file không được set trong session nhưng trạng thái là đang chạy
-             $response['log_content'] = "Log file information not found in session but process is marked as running.";
-             $response['message'] = "Process initiated, awaiting log file reference.";
+        } else { // No log file path in session - this is an issue if process was meant to start
+            if ($current_status_from_session === 'initiating_background' || $current_status_from_session === 'running_background') {
+                $response['status'] = 'error_file_ref';
+                $response['message'] = 'Error: Log file reference is missing from session. Cannot track progress.';
+            }
+            // If status is idle, completed, etc., missing log file path is not an active error.
         }
-    } else if ($current_status_from_session === 'completed_success') {
-        $response['message'] = 'Process completed successfully. Results are ready.';
-        $response['progress_percent'] = 100;
-    } else if ($current_status_from_session === 'completed_error' || $current_status_from_session === 'error_php_fatal' || $current_status_from_session === 'error_php_setup') {
-        $response['message'] = 'Process finished with an error (status: ' . htmlspecialchars($current_status_from_session) . ').';
-        $response['progress_percent'] = 100;
     } else if ($current_status_from_session === 'idle') {
-        $response['message'] = 'Scheduler is idle.';
+        $response['message'] = 'Scheduler is currently idle. No active process.';
+        $response['progress_percent'] = 0; // Reset progress for idle state
     }
-    // Không cần else, vì $response đã được khởi tạo
+    // For already completed states from session, the initial response assignment handles it.
+
+    // Update session with the latest determined status and progress
+    // This ensures that even if JS misses an update, the next poll gets the latest state
+    // (Only if status actually changed or progress increased)
+    if (($_SESSION['scheduler_status'] ?? '') !== $response['status'] || ($_SESSION['scheduler_progress_percent'] ?? 0) < $response['progress_percent']) {
+        $_SESSION['scheduler_status'] = $response['status'];
+        $_SESSION['scheduler_progress_percent'] = $response['progress_percent'];
+    }
 
 } catch (Exception $e) {
-    // Lỗi xảy ra trong chính get_scheduler_progress.php
     $response['status'] = 'error_progress_script';
-    $response['message'] = "Error in progress script: " . $e->getMessage();
-    $response['progress_percent'] = $progress_percent_from_session; // Giữ % cũ nếu có
+    $response['message'] = "PHP Error in progress script: " . $e->getMessage();
     error_log("get_scheduler_progress.php EXCEPTION: " . $e->getMessage() . "\nFile: " . $e->getFile() . "\nLine: " . $e->getLine());
 }
 
-// Đóng session lại sau khi đã đọc và có thể đã cập nhật
-if (session_id() !== '') { 
+if (session_id() !== '') {
     session_write_close();
 }
 
-// Đảm bảo header Content-Type được set một lần nữa nếu chưa (mặc dù đã gọi ở trên)
-if (!headers_sent()) {
-    header('Content-Type: application/json');
-}
 echo json_encode($response);
 exit;
 ?>
