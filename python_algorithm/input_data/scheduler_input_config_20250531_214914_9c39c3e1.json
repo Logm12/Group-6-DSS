@@ -1,0 +1,15 @@
+{
+    "semester_id_to_load": 1,
+    "cp_time_limit_seconds": 30,
+    "ga_population_size": 40,
+    "ga_generations": 100,
+    "ga_crossover_rate": 1,
+    "ga_mutation_rate": 0.1,
+    "ga_tournament_size": 5,
+    "ga_allow_hard_constraint_violations": true,
+    "priority_student_clash": "high",
+    "priority_lecturer_load_break": "medium",
+    "priority_classroom_util": "low",
+    "progress_log_file_path_from_php": "output_data/logs/scheduler_progress_20250531_214914_9c39c3e1.log",
+    "output_filename_override": "output_data/final_schedule_output_20250531_214914_9c39c3e1.json"
+}

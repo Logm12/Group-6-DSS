@@ -1,19 +1,17 @@
-# data_loader.py
 import mysql.connector
 from datetime import datetime, timedelta, time as dt_time
 from typing import List, Dict, Tuple, Set, Optional
-import uuid # For generating run_id
+import uuid
 
-# Import the updated models
 from models import (
     TimeSlot, Classroom, Instructor, Course, Student, ScheduledClass,
-    Schedule, SchedulingMetrics, SchedulingResult # Ensure these are imported if used here, though likely not
+    Schedule, SchedulingMetrics, SchedulingResult
 )
 
 DB_CONFIG = {
     'host': 'localhost',
     'user': 'root',
-    'password': '', # Your DB password
+    'password': '',
     'database': 'dss'
 }
 
@@ -28,10 +26,9 @@ def get_db_connection():
 def string_to_time(time_str: any) -> Optional[dt_time]:
     if isinstance(time_str, dt_time):
         return time_str
-    if isinstance(time_str, timedelta): # MySQL TIME type can be timedelta
+    if isinstance(time_str, timedelta):
         return (datetime.min + time_str).time()
     if not isinstance(time_str, str):
-        # print(f"DATA_LOADER DEBUG: string_to_time received non-string, non-time, non-timedelta: {type(time_str)} {time_str}")
         return None
     try:
         return datetime.strptime(time_str, '%H:%M:%S').time()
@@ -39,19 +36,14 @@ def string_to_time(time_str: any) -> Optional[dt_time]:
         try:
             return datetime.strptime(time_str, '%H:%M').time()
         except ValueError:
-            # print(f"DATA_LOADER DEBUG: string_to_time failed to parse string: {time_str}")
             return None
 
 def check_time_overlap(slot_start: Optional[dt_time], slot_end: Optional[dt_time],
                        busy_start: Optional[dt_time], busy_end: Optional[dt_time]) -> bool:
     if not all(isinstance(t, dt_time) for t in [slot_start, slot_end, busy_start, busy_end]):
-        # print(f"DEBUG check_time_overlap: Invalid time type. slot_start: {type(slot_start)}, slot_end: {type(slot_end)}, busy_start: {type(busy_start)}, busy_end: {type(busy_end)}")
         return False
-    # Ensure valid periods (start before end)
     if slot_start >= slot_end or busy_start >= busy_end:
-        # print(f"DEBUG check_time_overlap: Invalid period. Slot: {slot_start}-{slot_end}, Busy: {busy_start}-{busy_end}")
         return False
-    # Check for overlap: max of starts must be less than min of ends
     return max(slot_start, busy_start) < min(slot_end, busy_end)
 
 
@@ -68,7 +60,6 @@ def load_all_data(semester_id_to_load: int) -> Tuple[
     try:
         cursor = conn.cursor(dictionary=True)
 
-        # Validate SemesterID
         query_semester = "SELECT SemesterName FROM Semesters WHERE SemesterID = %s"
         cursor.execute(query_semester, (semester_id_to_load,))
         semester_row = cursor.fetchone()
@@ -77,14 +68,13 @@ def load_all_data(semester_id_to_load: int) -> Tuple[
             return empty_return
         print(f"DATA_LOADER INFO: Confirmed Semester: {semester_row['SemesterName']} (ID: {semester_id_to_load}).")
 
-        # 1. Load TimeSlots (generic weekly slots, IDs 1-24)
         print("DATA_LOADER INFO: Loading TimeSlots...")
         query_timeslots = "SELECT TimeSlotID, DayOfWeek, StartTime, EndTime FROM TimeSlots ORDER BY TimeSlotID"
         cursor.execute(query_timeslots)
         db_timeslots = cursor.fetchall()
         timeslots_list: List[TimeSlot] = []
-        timeslot_map_by_db_id: Dict[int, TimeSlot] = {} # DB int ID to TimeSlot object
-        timeslot_map_by_model_id: Dict[str, TimeSlot] = {} # Model str ID to TimeSlot object
+        timeslot_map_by_db_id: Dict[int, TimeSlot] = {}
+        timeslot_map_by_model_id: Dict[str, TimeSlot] = {}
 
         for row in db_timeslots:
             start_t = string_to_time(row['StartTime'])
@@ -94,7 +84,7 @@ def load_all_data(semester_id_to_load: int) -> Tuple[
                 continue
             
             ts_obj = TimeSlot(
-                id=str(row['TimeSlotID']), # Model uses string ID
+                id=str(row['TimeSlotID']),
                 day_of_week=str(row['DayOfWeek']),
                 start_time=start_t.strftime('%H:%M:%S'),
                 end_time=end_t.strftime('%H:%M:%S')
@@ -107,7 +97,6 @@ def load_all_data(semester_id_to_load: int) -> Tuple[
             return empty_return
         print(f"DATA_LOADER INFO: Loaded {len(timeslots_list)} generic TimeSlots.")
 
-        # 2. Load Classrooms
         print("DATA_LOADER INFO: Loading Classrooms...")
         query_classrooms = "SELECT ClassroomID, RoomCode, Capacity, Type FROM Classrooms ORDER BY ClassroomID"
         cursor.execute(query_classrooms)
@@ -118,8 +107,7 @@ def load_all_data(semester_id_to_load: int) -> Tuple[
                 id=int(row['ClassroomID']),
                 room_code=str(row['RoomCode']),
                 capacity=int(row['Capacity']),
-                # Type from DB, model has default 'Theory' if DB value is None or column missing
-                type=str(row['Type']) if row['Type'] is not None else 'Theory' # Explicitly handle None
+                type=str(row['Type']) if row['Type'] is not None else 'Theory'
             )
             classrooms_list.append(cr_obj)
             classroom_map_by_db_id[cr_obj.id] = cr_obj
@@ -127,18 +115,17 @@ def load_all_data(semester_id_to_load: int) -> Tuple[
             print(f"DATA_LOADER WARNING: No Classrooms found. Scheduling might be impossible if rooms are required.")
         print(f"DATA_LOADER INFO: Loaded {len(classrooms_list)} Classrooms.")
 
-        # 3. Load Instructors
         print("DATA_LOADER INFO: Loading Instructors...")
         query_instructors = "SELECT LecturerID, LecturerName FROM Lecturers ORDER BY LecturerID"
         cursor.execute(query_instructors)
         instructors_list: List[Instructor] = []
-        instructor_map_by_db_id: Dict[int, Instructor] = {} # DB int ID to Instructor object
+        instructor_map_by_db_id: Dict[int, Instructor] = {}
         
-        for row in cursor.fetchall(): # Corrected iteration
+        for row in cursor.fetchall():
             instr_obj = Instructor(
-                id=str(row['LecturerID']), # Model uses string ID
+                id=str(row['LecturerID']),
                 name=str(row['LecturerName']),
-                unavailable_slot_ids=set() # Initialize, will be populated later
+                unavailable_slot_ids=set()
             )
             instructors_list.append(instr_obj)
             instructor_map_by_db_id[int(row['LecturerID'])] = instr_obj
@@ -146,9 +133,7 @@ def load_all_data(semester_id_to_load: int) -> Tuple[
             print(f"DATA_LOADER WARNING: No Instructors found. Scheduling might be impossible if instructors are required.")
         print(f"DATA_LOADER INFO: Loaded {len(instructors_list)} Instructors.")
 
-        # 4. Load Courses (as a catalog)
         print("DATA_LOADER INFO: Loading Courses Catalog...")
-        # Ensure ExpectedStudents and Credits are fetched
         query_courses_table = """
             SELECT CourseID, CourseName, ExpectedStudents, Credits, SessionDurationSlots 
             FROM Courses 
@@ -160,7 +145,6 @@ def load_all_data(semester_id_to_load: int) -> Tuple[
 
         for row_course_info in db_courses_info:
             course_id_str = str(row_course_info['CourseID'])
-            # Handle potential NULL for ExpectedStudents and Credits
             expected_students = int(row_course_info['ExpectedStudents'] or 0)
             if expected_students == 0:
                 print(f"DATA_LOADER WARNING: Course {course_id_str} ('{row_course_info['CourseName']}') has 0 ExpectedStudents. This might affect scheduling constraints.")
@@ -180,9 +164,7 @@ def load_all_data(semester_id_to_load: int) -> Tuple[
             return empty_return
         print(f"DATA_LOADER INFO: Loaded {len(courses_catalog_map)} Courses into catalog.")
 
-        # 5. Load ScheduledClass instances (the items to be scheduled or existing schedule parts)
         print(f"DATA_LOADER INFO: Loading ScheduledClasses for SemesterID {semester_id_to_load}...")
-        # This query loads the *initial state* of the schedule, which might be partially filled or empty.
         query_scheduled_classes = """
             SELECT ScheduleID, CourseID, LecturerID, ClassroomID, TimeSlotID, SemesterID
             FROM ScheduledClasses
@@ -201,7 +183,6 @@ def load_all_data(semester_id_to_load: int) -> Tuple[
                 print(f"DATA_LOADER WARNING: ScheduledClass ID {sc_row['ScheduleID']} refers to CourseID {course_id_str} which is not in Courses catalog. Skipping.")
                 continue
 
-            # Get num_students from the Course object's expected_students
             num_students_for_class = course_obj.expected_students
 
             lecturer_db_id = sc_row.get('LecturerID')
@@ -234,23 +215,19 @@ def load_all_data(semester_id_to_load: int) -> Tuple[
             scheduled_classes_list.append(ScheduledClass(
                 id=int(sc_row['ScheduleID']),
                 course_id=course_id_str,
-                num_students=num_students_for_class, # Sourced from Course object
+                num_students=num_students_for_class,
                 semester_id=int(sc_row['SemesterID']),
-                instructor_id=instructor_model_id,   # May be None if unassigned
-                classroom_id=classroom_model_id,   # May be None if unassigned
-                timeslot_id=timeslot_model_id      # May be None if unassigned
+                instructor_id=instructor_model_id,
+                classroom_id=classroom_model_id,
+                timeslot_id=timeslot_model_id
             ))
         
-        # This is crucial: "scheduledclass là data đầu vào"
-        # If this list is empty, it means the algorithm starts from scratch for this semester.
-        # If it's populated, it's the current state to be (potentially) optimized.
         if not scheduled_classes_list:
             print(f"DATA_LOADER INFO: No pre-existing ScheduledClass entries found for SemesterID {semester_id_to_load}. "
                   "The scheduling algorithm will generate a new schedule if courses are defined and need scheduling.")
         else:
             print(f"DATA_LOADER INFO: Loaded {len(scheduled_classes_list)} existing ScheduledClass entries for the semester.")
         
-        # 6. Load Students and their enrollments
         print("DATA_LOADER INFO: Loading Students and their enrollments...")
         query_students = "SELECT StudentID, StudentName FROM Students ORDER BY StudentID"
         cursor.execute(query_students)
@@ -288,14 +265,12 @@ def load_all_data(semester_id_to_load: int) -> Tuple[
                  print(f"DATA_LOADER INFO: Enrollment for StudentID '{student_original_id_str}' (Course '{course_original_id_str}') skipped: Student not found in loaded students.")
         print(f"DATA_LOADER INFO: Loaded {len(students_list)} Students. Processed {enrollments_processed_for_known_students_courses}/{enrollments_count} enrollments for semester {semester_id_to_load}.")
 
-        # 7. Update Instructor unavailable slots
         print("DATA_LOADER INFO: Updating Instructor unavailable slots...")
         query_unavailable_defs = """
             SELECT iu.LecturerID, iu.BusyDayOfWeek, iu.BusyStartTime, iu.BusyEndTime
             FROM InstructorUnavailableSlots iu
             WHERE iu.SemesterID = %s OR iu.SemesterID IS NULL 
         """
-        # Consider general unavailabilities (SemesterID IS NULL) and semester-specific ones
         cursor.execute(query_unavailable_defs, (semester_id_to_load,))
         
         unavailable_slots_processed = 0
@@ -319,24 +294,18 @@ def load_all_data(semester_id_to_load: int) -> Tuple[
                 print(f"DATA_LOADER WARNING: Invalid busy period (start >= end) for LecturerID {lecturer_db_id_int}. Start: {busy_start_time_obj}, End: {busy_end_time_obj}. Skipping.")
                 continue
 
-            matched_one_slot = False
             for ts_model_id, ts_obj in timeslot_map_by_model_id.items():
                 if ts_obj.day_of_week.lower() == busy_day_str.lower():
-                    ts_start_obj = string_to_time(ts_obj.start_time) # Convert model's string time to time object
-                    ts_end_obj = string_to_time(ts_obj.end_time)     # Convert model's string time to time object
+                    ts_start_obj = string_to_time(ts_obj.start_time)
+                    ts_end_obj = string_to_time(ts_obj.end_time)
 
                     if not ts_start_obj or not ts_end_obj:
-                        # This should ideally not happen if timeslots loaded correctly
                         print(f"DATA_LOADER CRITICAL WARNING: TimeSlot object {ts_obj.id} has invalid times. Skipping overlap check.")
                         continue
                         
                     if check_time_overlap(ts_start_obj, ts_end_obj, busy_start_time_obj, busy_end_time_obj):
-                        instructor_obj.unavailable_slot_ids.add(ts_model_id) # Add TimeSlot.id (string)
+                        instructor_obj.unavailable_slot_ids.add(ts_model_id)
                         unavailable_slots_processed += 1
-                        matched_one_slot = True
-            # if not matched_one_slot:
-            #     print(f"DATA_LOADER DEBUG: No timeslot overlap found for instructor {instructor_obj.id} busy period: {busy_day_str} {busy_start_time_obj}-{busy_end_time_obj}")
-
 
         print(f"DATA_LOADER INFO: Updated unavailable slots for instructors. Applied {unavailable_slots_processed} specific slot blockages based on definitions.")
 
@@ -353,25 +322,19 @@ def load_all_data(semester_id_to_load: int) -> Tuple[
             cursor.close()
         if conn and conn.is_connected():
             conn.close()
-            # print("DATA_LOADER INFO: Database connection closed.")
 
     print(f"DATA_LOADER INFO: Data loading process completed for SemesterID: {semester_id_to_load}.")
     return scheduled_classes_list, instructors_list, classrooms_list, timeslots_list, students_list, courses_catalog_map
 
 if __name__ == '__main__':
     print("DATA_LOADER: Running standalone test...")
-    # <<< IMPORTANT: Set this to a SemesterID that EXISTS in your 'Semesters' table and has related data >>>
     target_semester_id = 1 
-    # <<< You might also need to create some dummy data in InstructorUnavailableSlots for testing that part >>>
-    # Example: INSERT INTO InstructorUnavailableSlots (LecturerID, BusyDayOfWeek, BusyStartTime, BusyEndTime, Reason, SemesterID) 
-    #          VALUES (1, 'Monday', '09:00:00', '11:00:00', 'Meeting', 1); -- Assuming LecturerID 1 exists
 
-    # Basic check if semester exists before full load
     conn_test = get_db_connection()
     sem_exists = False
     if conn_test:
         try:
-            cursor_test = conn_test.cursor(dictionary=True) # Use dictionary=True for consistency
+            cursor_test = conn_test.cursor(dictionary=True)
             cursor_test.execute("SELECT SemesterName FROM Semesters WHERE SemesterID = %s", (target_semester_id,))
             sem_row_test = cursor_test.fetchone()
             if sem_row_test:
@@ -389,7 +352,6 @@ if __name__ == '__main__':
     else:
         print(f"DATA_LOADER Test: Attempting to load all data for SemesterID {target_semester_id}...")
         
-        # Call the main loading function
         loaded_scheduled_classes, loaded_instructors, loaded_classrooms, \
         loaded_timeslots, loaded_students, loaded_courses_catalog = load_all_data(target_semester_id)
 
@@ -428,7 +390,7 @@ if __name__ == '__main__':
         if loaded_students:
             for i in range(min(3, len(loaded_students))):
                 stud = loaded_students[i]
-                enrolled_ids = list(stud.enrolled_course_ids)[:2] # Show a couple of enrollments
+                enrolled_ids = list(stud.enrolled_course_ids)[:2]
                 print(f"  Sample Student {i+1}: ID={stud.id}, Name='{stud.name}', Enrolled Courses (sample): {enrolled_ids if enrolled_ids else 'None'}")
         
         print("\nDATA_LOADER Test: Load process finished.")

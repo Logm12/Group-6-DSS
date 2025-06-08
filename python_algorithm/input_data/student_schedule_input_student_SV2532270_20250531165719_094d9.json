@@ -1,0 +1,30 @@
+{
+    "run_type": "student_schedule_request",
+    "student_id": "SV2532270",
+    "semester_id_to_load": 1,
+    "requested_course_ids": [
+        "INS309701",
+        "INS306002",
+        "INS308001",
+        "INS201501"
+    ],
+    "student_preferences": {
+        "time_of_day": "",
+        "max_consecutive_classes": "3",
+        "compact_days": true,
+        "friday_off": true
+    },
+    "cp_time_limit_seconds": 20,
+    "ga_population_size": 30,
+    "ga_generations": 50,
+    "ga_crossover_rate": 0.8,
+    "ga_mutation_rate": 0.2,
+    "ga_tournament_size": 5,
+    "ga_allow_hard_constraint_violations": false,
+    "priority_student_clash": "very_high",
+    "priority_student_preferences": "high",
+    "priority_lecturer_load_break": "medium",
+    "priority_classroom_util": "low",
+    "progress_log_file_path_from_php": "output_data/logs/student_schedule_progress_student_SV2532270_20250531165719_094d9.log",
+    "output_filename_override": "output_data/student_schedule_output_student_SV2532270_20250531165719_094d9.json"
+}

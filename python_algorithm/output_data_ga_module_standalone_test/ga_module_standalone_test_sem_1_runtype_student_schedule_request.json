@@ -1,0 +1,77 @@
+{
+    "test_run_info": {
+        "module": "ga_module.py_standalone_test",
+        "semester_id": 1,
+        "run_type": "student_schedule_request"
+    },
+    "ga_params_used": {
+        "population_size": 20,
+        "generations": 30,
+        "crossover_rate": 0.85,
+        "mutation_rate": 0.15,
+        "tournament_size": 3,
+        "allow_hard_constraint_violations_in_ga": false
+    },
+    "ga_final_best_penalty": 480.0,
+    "ga_final_detailed_metrics": {
+        "final_penalty_score": 480.0,
+        "num_scheduled_events": 4,
+        "hard_constraints_violated_in_final_schedule": false,
+        "soft_constraints_details": {
+            "lecturer_underload": {
+                "count": 8,
+                "penalty_contribution": 480.0
+            }
+        }
+    },
+    "ga_final_best_schedule": [
+        {
+            "schedule_db_id": -2000,
+            "course_id_str": "BSA105501",
+            "lecturer_id_db": 3,
+            "classroom_id_db": 5,
+            "timeslot_id_db": 3,
+            "num_students": 45,
+            "course_name": "Business Culture",
+            "lecturer_name": "Michael Omar",
+            "room_code": "604",
+            "timeslot_info_str": "Monday (13:00:00-15:40:00)"
+        },
+        {
+            "schedule_db_id": -2001,
+            "course_id_str": "INE105001",
+            "lecturer_id_db": 1,
+            "classroom_id_db": 2,
+            "timeslot_id_db": 24,
+            "num_students": 45,
+            "course_name": "Microeconomics",
+            "lecturer_name": "Truong Cong Doan",
+            "room_code": "406",
+            "timeslot_info_str": "Saturday (15:50:00-18:30:00)"
+        },
+        {
+            "schedule_db_id": -2002,
+            "course_id_str": "INS203702",
+            "lecturer_id_db": 2,
+            "classroom_id_db": 3,
+            "timeslot_id_db": 2,
+            "num_students": 45,
+            "course_name": "Information Systems and Business Processes",
+            "lecturer_name": "Pham Van Dai",
+            "room_code": "504",
+            "timeslot_info_str": "Monday (09:50:00-12:30:00)"
+        },
+        {
+            "schedule_db_id": -2003,
+            "course_id_str": "MAT109204",
+            "lecturer_id_db": 1,
+            "classroom_id_db": 1,
+            "timeslot_id_db": 4,
+            "num_students": 45,
+            "course_name": "Advanced Mathematics",
+            "lecturer_name": "Truong Cong Doan",
+            "room_code": "407",
+            "timeslot_info_str": "Monday (15:50:00-18:30:00)"
+        }
+    ]
+}

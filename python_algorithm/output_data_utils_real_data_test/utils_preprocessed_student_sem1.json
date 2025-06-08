@@ -12,572 +12,54 @@
         "penalty_lecturer_workload_deviation_base": 20.0,
         "classroom_slightly_empty_multiplier_base": 10.0,
         "target_classroom_fill_ratio_min": 0.5,
-        "basic_slot_duration_minutes": 50,
-        "break_duration_minutes": 5,
         "lecturer_min_break_minutes": 10,
         "student_max_consecutive_slots": 3,
         "target_classroom_fill_ratio_max": 1.0,
         "penalty_student_preference_violation_base": 100.0,
         "current_semester_id": 1,
-        "penalty_student_clash": 5000.0,
-        "penalty_student_preference_violation": 100.0,
+        "student_id": "S_TEST_UTILS_007",
+        "penalty_student_clash": 1000.0,
+        "penalty_student_preference_violation": 200.0,
         "penalty_lecturer_overload": 50.0,
         "penalty_lecturer_underload": 30.0,
         "penalty_lecturer_insufficient_break": 40.0,
         "penalty_lecturer_workload_deviation": 20.0,
-        "penalty_classroom_capacity_violation": 5000.0,
-        "penalty_classroom_underutilized": 5.0,
-        "penalty_classroom_slightly_empty": 1.0
+        "penalty_classroom_capacity_violation": 10000.0,
+        "penalty_classroom_underutilized": 10.0,
+        "penalty_classroom_slightly_empty": 2.0
     },
     "scheduled_items": {
         "0": {
-            "original_id": 218,
+            "original_id": -1,
             "course_id_str": "BSA105501",
             "course_name": "Business Culture",
             "num_students": 45,
             "required_periods_per_session": 1,
-            "assigned_instructor_mapped_int_id": 32,
-            "assigned_classroom_mapped_int_id": 0,
-            "assigned_timeslot_mapped_int_id": 22,
+            "assigned_instructor_mapped_int_id": null,
+            "assigned_classroom_mapped_int_id": null,
+            "assigned_timeslot_mapped_int_id": null,
             "semester_id": 1
         },
         "1": {
-            "original_id": 219,
-            "course_id_str": "BSA301201",
-            "course_name": "Marketing Research",
-            "num_students": 45,
-            "required_periods_per_session": 1,
-            "assigned_instructor_mapped_int_id": 17,
-            "assigned_classroom_mapped_int_id": 1,
-            "assigned_timeslot_mapped_int_id": 3,
-            "semester_id": 1
-        },
-        "2": {
-            "original_id": 220,
-            "course_id_str": "BSA301202",
-            "course_name": "Marketing Research",
-            "num_students": 45,
-            "required_periods_per_session": 1,
-            "assigned_instructor_mapped_int_id": 34,
-            "assigned_classroom_mapped_int_id": 8,
-            "assigned_timeslot_mapped_int_id": 1,
-            "semester_id": 1
-        },
-        "3": {
-            "original_id": 221,
-            "course_id_str": "BSA301402",
-            "course_name": "Service Marketing",
-            "num_students": 45,
-            "required_periods_per_session": 1,
-            "assigned_instructor_mapped_int_id": 2,
-            "assigned_classroom_mapped_int_id": 0,
-            "assigned_timeslot_mapped_int_id": 2,
-            "semester_id": 1
-        },
-        "4": {
-            "original_id": 222,
-            "course_id_str": "FIB300501",
-            "course_name": "Investment and Portfolio Management",
-            "num_students": 45,
-            "required_periods_per_session": 1,
-            "assigned_instructor_mapped_int_id": 25,
-            "assigned_classroom_mapped_int_id": 4,
-            "assigned_timeslot_mapped_int_id": 7,
-            "semester_id": 1
-        },
-        "5": {
-            "original_id": 223,
+            "original_id": -2,
             "course_id_str": "INE105001",
             "course_name": "Microeconomics",
             "num_students": 45,
             "required_periods_per_session": 1,
-            "assigned_instructor_mapped_int_id": 19,
-            "assigned_classroom_mapped_int_id": 1,
-            "assigned_timeslot_mapped_int_id": 4,
+            "assigned_instructor_mapped_int_id": null,
+            "assigned_classroom_mapped_int_id": null,
+            "assigned_timeslot_mapped_int_id": null,
             "semester_id": 1
         },
-        "6": {
-            "original_id": 224,
-            "course_id_str": "INE105002",
-            "course_name": "Microeconomics",
-            "num_students": 45,
-            "required_periods_per_session": 1,
-            "assigned_instructor_mapped_int_id": 35,
-            "assigned_classroom_mapped_int_id": 14,
-            "assigned_timeslot_mapped_int_id": 16,
-            "semester_id": 1
-        },
-        "7": {
-            "original_id": 225,
-            "course_id_str": "INE105102",
-            "course_name": "Macroeconomics",
-            "num_students": 45,
-            "required_periods_per_session": 1,
-            "assigned_instructor_mapped_int_id": 23,
-            "assigned_classroom_mapped_int_id": 1,
-            "assigned_timeslot_mapped_int_id": 5,
-            "semester_id": 1
-        },
-        "8": {
-            "original_id": 226,
-            "course_id_str": "INE300901",
-            "course_name": "International Project Management",
-            "num_students": 45,
-            "required_periods_per_session": 1,
-            "assigned_instructor_mapped_int_id": 21,
-            "assigned_classroom_mapped_int_id": 19,
-            "assigned_timeslot_mapped_int_id": 2,
-            "semester_id": 1
-        },
-        "9": {
-            "original_id": 227,
-            "course_id_str": "INE306001",
-            "course_name": "E-Commerce",
-            "num_students": 45,
-            "required_periods_per_session": 1,
-            "assigned_instructor_mapped_int_id": 3,
-            "assigned_classroom_mapped_int_id": 22,
-            "assigned_timeslot_mapped_int_id": 17,
-            "semester_id": 1
-        },
-        "10": {
-            "original_id": 228,
-            "course_id_str": "INS109101",
-            "course_name": "English Linguistics 2",
-            "num_students": 45,
-            "required_periods_per_session": 1,
-            "assigned_instructor_mapped_int_id": 20,
-            "assigned_classroom_mapped_int_id": 7,
-            "assigned_timeslot_mapped_int_id": 1,
-            "semester_id": 1
-        },
-        "11": {
-            "original_id": 229,
-            "course_id_str": "INS200903",
-            "course_name": "Principles of Accounting",
-            "num_students": 45,
-            "required_periods_per_session": 1,
-            "assigned_instructor_mapped_int_id": 17,
-            "assigned_classroom_mapped_int_id": 3,
-            "assigned_timeslot_mapped_int_id": 19,
-            "semester_id": 1
-        },
-        "12": {
-            "original_id": 230,
-            "course_id_str": "INS201101",
-            "course_name": "Economic Law",
-            "num_students": 45,
-            "required_periods_per_session": 1,
-            "assigned_instructor_mapped_int_id": 27,
-            "assigned_classroom_mapped_int_id": 0,
-            "assigned_timeslot_mapped_int_id": 3,
-            "semester_id": 1
-        },
-        "13": {
-            "original_id": 231,
-            "course_id_str": "INS201501",
-            "course_name": "Basic Finance",
-            "num_students": 45,
-            "required_periods_per_session": 1,
-            "assigned_instructor_mapped_int_id": 36,
-            "assigned_classroom_mapped_int_id": 21,
-            "assigned_timeslot_mapped_int_id": 1,
-            "semester_id": 1
-        },
-        "14": {
-            "original_id": 232,
-            "course_id_str": "INS201502",
-            "course_name": "Basic Finance",
-            "num_students": 45,
-            "required_periods_per_session": 1,
-            "assigned_instructor_mapped_int_id": 44,
-            "assigned_classroom_mapped_int_id": 0,
-            "assigned_timeslot_mapped_int_id": 4,
-            "semester_id": 1
-        },
-        "15": {
-            "original_id": 233,
-            "course_id_str": "INS201503",
-            "course_name": "Basic Finance",
-            "num_students": 45,
-            "required_periods_per_session": 1,
-            "assigned_instructor_mapped_int_id": 1,
-            "assigned_classroom_mapped_int_id": 0,
-            "assigned_timeslot_mapped_int_id": 5,
-            "semester_id": 1
-        },
-        "16": {
-            "original_id": 234,
-            "course_id_str": "INS203702",
-            "course_name": "Information Systems and Business Processes",
-            "num_students": 45,
-            "required_periods_per_session": 1,
-            "assigned_instructor_mapped_int_id": 25,
-            "assigned_classroom_mapped_int_id": 0,
-            "assigned_timeslot_mapped_int_id": 6,
-            "semester_id": 1
-        },
-        "17": {
-            "original_id": 235,
-            "course_id_str": "INS207303",
-            "course_name": "Programming 2",
-            "num_students": 45,
-            "required_periods_per_session": 1,
-            "assigned_instructor_mapped_int_id": 11,
-            "assigned_classroom_mapped_int_id": 2,
-            "assigned_timeslot_mapped_int_id": 8,
-            "semester_id": 1
-        },
-        "18": {
-            "original_id": 236,
-            "course_id_str": "INS207402",
-            "course_name": "Discrete Mathematics",
-            "num_students": 45,
-            "required_periods_per_session": 1,
-            "assigned_instructor_mapped_int_id": 9,
-            "assigned_classroom_mapped_int_id": 0,
-            "assigned_timeslot_mapped_int_id": 9,
-            "semester_id": 1
-        },
-        "19": {
-            "original_id": 237,
-            "course_id_str": "INS209801",
-            "course_name": "Principles of Accounting",
-            "num_students": 45,
-            "required_periods_per_session": 1,
-            "assigned_instructor_mapped_int_id": 18,
-            "assigned_classroom_mapped_int_id": 13,
-            "assigned_timeslot_mapped_int_id": 2,
-            "semester_id": 1
-        },
-        "20": {
-            "original_id": 238,
-            "course_id_str": "INS210902",
-            "course_name": "Managerial Accounting",
-            "num_students": 45,
-            "required_periods_per_session": 1,
-            "assigned_instructor_mapped_int_id": 18,
-            "assigned_classroom_mapped_int_id": 13,
-            "assigned_timeslot_mapped_int_id": 4,
-            "semester_id": 1
-        },
-        "21": {
-            "original_id": 239,
-            "course_id_str": "INS211102",
-            "course_name": "Business Organization and Management",
-            "num_students": 45,
-            "required_periods_per_session": 1,
-            "assigned_instructor_mapped_int_id": 8,
-            "assigned_classroom_mapped_int_id": 1,
-            "assigned_timeslot_mapped_int_id": 6,
-            "semester_id": 1
-        },
-        "22": {
-            "original_id": 240,
-            "course_id_str": "INS300202",
-            "course_name": "Financial Accounting 2",
-            "num_students": 45,
-            "required_periods_per_session": 1,
-            "assigned_instructor_mapped_int_id": 17,
-            "assigned_classroom_mapped_int_id": 3,
-            "assigned_timeslot_mapped_int_id": 1,
-            "semester_id": 1
-        },
-        "23": {
-            "original_id": 241,
-            "course_id_str": "INS301601",
-            "course_name": "Computerized Accounting Practice",
-            "num_students": 45,
-            "required_periods_per_session": 1,
-            "assigned_instructor_mapped_int_id": 24,
-            "assigned_classroom_mapped_int_id": 2,
-            "assigned_timeslot_mapped_int_id": 0,
-            "semester_id": 1
-        },
-        "24": {
-            "original_id": 242,
-            "course_id_str": "INS301603",
-            "course_name": "Computerized Accounting Practice",
-            "num_students": 45,
-            "required_periods_per_session": 1,
-            "assigned_instructor_mapped_int_id": 17,
-            "assigned_classroom_mapped_int_id": 3,
-            "assigned_timeslot_mapped_int_id": 0,
-            "semester_id": 1
-        },
-        "25": {
-            "original_id": 243,
-            "course_id_str": "INS30201",
-            "course_name": "Global Supply Chain Management",
-            "num_students": 45,
-            "required_periods_per_session": 1,
-            "assigned_instructor_mapped_int_id": 41,
-            "assigned_classroom_mapped_int_id": 11,
-            "assigned_timeslot_mapped_int_id": 1,
-            "semester_id": 1
-        },
-        "26": {
-            "original_id": 244,
-            "course_id_str": "INS302803",
-            "course_name": "Risk Management and Insurance",
-            "num_students": 45,
-            "required_periods_per_session": 1,
-            "assigned_instructor_mapped_int_id": 31,
-            "assigned_classroom_mapped_int_id": 4,
-            "assigned_timeslot_mapped_int_id": 1,
-            "semester_id": 1
-        },
-        "27": {
-            "original_id": 245,
-            "course_id_str": "INS302901",
-            "course_name": "Financial Markets and Institutions",
-            "num_students": 45,
-            "required_periods_per_session": 1,
-            "assigned_instructor_mapped_int_id": 37,
-            "assigned_classroom_mapped_int_id": 16,
-            "assigned_timeslot_mapped_int_id": 1,
-            "semester_id": 1
-        },
-        "28": {
-            "original_id": 246,
-            "course_id_str": "INS303002",
-            "course_name": "Financial Statement Analysis",
-            "num_students": 45,
-            "required_periods_per_session": 1,
-            "assigned_instructor_mapped_int_id": 6,
-            "assigned_classroom_mapped_int_id": 14,
-            "assigned_timeslot_mapped_int_id": 3,
-            "semester_id": 1
-        },
-        "29": {
-            "original_id": 247,
-            "course_id_str": "INS303201",
-            "course_name": "International Finance",
-            "num_students": 45,
-            "required_periods_per_session": 1,
-            "assigned_instructor_mapped_int_id": 31,
-            "assigned_classroom_mapped_int_id": 4,
-            "assigned_timeslot_mapped_int_id": 0,
-            "semester_id": 1
-        },
-        "30": {
-            "original_id": 248,
-            "course_id_str": "INS304901",
-            "course_name": "Econometrics",
-            "num_students": 45,
-            "required_periods_per_session": 1,
-            "assigned_instructor_mapped_int_id": 28,
-            "assigned_classroom_mapped_int_id": 5,
-            "assigned_timeslot_mapped_int_id": 17,
-            "semester_id": 1
-        },
-        "31": {
-            "original_id": 249,
-            "course_id_str": "INS306002",
-            "course_name": "Advanced Database Development",
-            "num_students": 45,
-            "required_periods_per_session": 1,
-            "assigned_instructor_mapped_int_id": 42,
-            "assigned_classroom_mapped_int_id": 3,
-            "assigned_timeslot_mapped_int_id": 3,
-            "semester_id": 1
-        },
-        "32": {
-            "original_id": 250,
-            "course_id_str": "INS306603",
-            "course_name": "Business Solutions for Enterprises",
-            "num_students": 45,
-            "required_periods_per_session": 1,
-            "assigned_instructor_mapped_int_id": 20,
-            "assigned_classroom_mapped_int_id": 7,
-            "assigned_timeslot_mapped_int_id": 0,
-            "semester_id": 1
-        },
-        "33": {
-            "original_id": 251,
-            "course_id_str": "INS306901",
-            "course_name": "Decision Support Systems",
-            "num_students": 45,
-            "required_periods_per_session": 1,
-            "assigned_instructor_mapped_int_id": 43,
-            "assigned_classroom_mapped_int_id": 8,
-            "assigned_timeslot_mapped_int_id": 10,
-            "semester_id": 1
-        },
-        "34": {
-            "original_id": 252,
-            "course_id_str": "INS307403",
-            "course_name": "Global Information Systems",
-            "num_students": 45,
-            "required_periods_per_session": 1,
-            "assigned_instructor_mapped_int_id": 35,
-            "assigned_classroom_mapped_int_id": 9,
-            "assigned_timeslot_mapped_int_id": 11,
-            "semester_id": 1
-        },
-        "35": {
-            "original_id": 253,
+        "2": {
+            "original_id": -3,
             "course_id_str": "INS308001",
             "course_name": "Artificial Intelligence",
             "num_students": 45,
             "required_periods_per_session": 1,
-            "assigned_instructor_mapped_int_id": 38,
-            "assigned_classroom_mapped_int_id": 10,
-            "assigned_timeslot_mapped_int_id": 9,
-            "semester_id": 1
-        },
-        "36": {
-            "original_id": 254,
-            "course_id_str": "INS309701",
-            "course_name": "Accounting I: Financial Accounting",
-            "num_students": 45,
-            "required_periods_per_session": 1,
-            "assigned_instructor_mapped_int_id": 21,
-            "assigned_classroom_mapped_int_id": 19,
-            "assigned_timeslot_mapped_int_id": 1,
-            "semester_id": 1
-        },
-        "37": {
-            "original_id": 255,
-            "course_id_str": "INS315101",
-            "course_name": "Embedded Control Systems",
-            "num_students": 45,
-            "required_periods_per_session": 1,
-            "assigned_instructor_mapped_int_id": 41,
-            "assigned_classroom_mapped_int_id": 11,
-            "assigned_timeslot_mapped_int_id": 10,
-            "semester_id": 1
-        },
-        "38": {
-            "original_id": 256,
-            "course_id_str": "INS315201",
-            "course_name": "Robotics",
-            "num_students": 45,
-            "required_periods_per_session": 1,
-            "assigned_instructor_mapped_int_id": 3,
-            "assigned_classroom_mapped_int_id": 22,
-            "assigned_timeslot_mapped_int_id": 1,
-            "semester_id": 1
-        },
-        "39": {
-            "original_id": 257,
-            "course_id_str": "INS318901",
-            "course_name": "Corporate Finance",
-            "num_students": 45,
-            "required_periods_per_session": 1,
-            "assigned_instructor_mapped_int_id": 34,
-            "assigned_classroom_mapped_int_id": 12,
-            "assigned_timeslot_mapped_int_id": 22,
-            "semester_id": 1
-        },
-        "40": {
-            "original_id": 258,
-            "course_id_str": "INS323702",
-            "course_name": "Electric Motors and Drive Systems",
-            "num_students": 45,
-            "required_periods_per_session": 1,
-            "assigned_instructor_mapped_int_id": 18,
-            "assigned_classroom_mapped_int_id": 13,
-            "assigned_timeslot_mapped_int_id": 22,
-            "semester_id": 1
-        },
-        "41": {
-            "original_id": 259,
-            "course_id_str": "INS325101",
-            "course_name": "Taxation",
-            "num_students": 45,
-            "required_periods_per_session": 1,
-            "assigned_instructor_mapped_int_id": 6,
-            "assigned_classroom_mapped_int_id": 14,
-            "assigned_timeslot_mapped_int_id": 2,
-            "semester_id": 1
-        },
-        "42": {
-            "original_id": 260,
-            "course_id_str": "INS325201",
-            "course_name": "Financial Accounting 2",
-            "num_students": 45,
-            "required_periods_per_session": 1,
-            "assigned_instructor_mapped_int_id": 5,
-            "assigned_classroom_mapped_int_id": 15,
-            "assigned_timeslot_mapped_int_id": 17,
-            "semester_id": 1
-        },
-        "43": {
-            "original_id": 261,
-            "course_id_str": "INS327102",
-            "course_name": "International Accounting",
-            "num_students": 45,
-            "required_periods_per_session": 1,
-            "assigned_instructor_mapped_int_id": 37,
-            "assigned_classroom_mapped_int_id": 16,
-            "assigned_timeslot_mapped_int_id": 0,
-            "semester_id": 1
-        },
-        "44": {
-            "original_id": 262,
-            "course_id_str": "INS328003",
-            "course_name": "Data Preparation and Visualization",
-            "num_students": 45,
-            "required_periods_per_session": 1,
-            "assigned_instructor_mapped_int_id": 4,
-            "assigned_classroom_mapped_int_id": 17,
-            "assigned_timeslot_mapped_int_id": 2,
-            "semester_id": 1
-        },
-        "45": {
-            "original_id": 263,
-            "course_id_str": "MAT100501",
-            "course_name": "Mathematical Economics",
-            "num_students": 45,
-            "required_periods_per_session": 1,
-            "assigned_instructor_mapped_int_id": 47,
-            "assigned_classroom_mapped_int_id": 18,
-            "assigned_timeslot_mapped_int_id": 13,
-            "semester_id": 1
-        },
-        "46": {
-            "original_id": 264,
-            "course_id_str": "MAT109204",
-            "course_name": "Advanced Mathematics",
-            "num_students": 45,
-            "required_periods_per_session": 1,
-            "assigned_instructor_mapped_int_id": 21,
-            "assigned_classroom_mapped_int_id": 19,
-            "assigned_timeslot_mapped_int_id": 20,
-            "semester_id": 1
-        },
-        "47": {
-            "original_id": 265,
-            "course_id_str": "PEC100802",
-            "course_name": "Marx Leninist Political Economy",
-            "num_students": 45,
-            "required_periods_per_session": 1,
-            "assigned_instructor_mapped_int_id": 32,
-            "assigned_classroom_mapped_int_id": 20,
-            "assigned_timeslot_mapped_int_id": 0,
-            "semester_id": 1
-        },
-        "48": {
-            "original_id": 266,
-            "course_id_str": "PHI100201",
-            "course_name": "Scientific Socialism",
-            "num_students": 45,
-            "required_periods_per_session": 1,
-            "assigned_instructor_mapped_int_id": 36,
-            "assigned_classroom_mapped_int_id": 21,
-            "assigned_timeslot_mapped_int_id": 22,
-            "semester_id": 1
-        },
-        "49": {
-            "original_id": 267,
-            "course_id_str": "RUS500201",
-            "course_name": "Russian Language 1B",
-            "num_students": 45,
-            "required_periods_per_session": 1,
-            "assigned_instructor_mapped_int_id": 3,
-            "assigned_classroom_mapped_int_id": 22,
-            "assigned_timeslot_mapped_int_id": 0,
+            "assigned_instructor_mapped_int_id": null,
+            "assigned_classroom_mapped_int_id": null,
+            "assigned_timeslot_mapped_int_id": null,
             "semester_id": 1
         }
     },
@@ -598,7 +80,10 @@
             "name": "Michael Omar",
             "original_model_id_str": "3",
             "original_db_pk_int": 3,
-            "unavailable_slot_ids_mapped": []
+            "unavailable_slot_ids_mapped": [
+                8,
+                9
+            ]
         },
         "3": {
             "name": "Nguyen Tat Thang",
@@ -868,6 +353,12 @@
             "name": "Nguyen Thi Thanh Phuong",
             "original_model_id_str": "48",
             "original_db_pk_int": 48,
+            "unavailable_slot_ids_mapped": []
+        },
+        "48": {
+            "name": "tea",
+            "original_model_id_str": "49",
+            "original_db_pk_int": 49,
             "unavailable_slot_ids_mapped": []
         }
     },
@@ -1182,76 +673,6 @@
         }
     },
     "courses_catalog_map": {
-        "INS303201": {
-            "id": "INS303201",
-            "name": "International Finance",
-            "expected_students": 45,
-            "credits": 3,
-            "required_periods_per_session": 1
-        },
-        "INS325101": {
-            "id": "INS325101",
-            "name": "Taxation",
-            "expected_students": 45,
-            "credits": 3,
-            "required_periods_per_session": 1
-        },
-        "RUS500201": {
-            "id": "RUS500201",
-            "name": "Russian Language 1B",
-            "expected_students": 45,
-            "credits": 3,
-            "required_periods_per_session": 1
-        },
-        "BSA301201": {
-            "id": "BSA301201",
-            "name": "Marketing Research",
-            "expected_students": 45,
-            "credits": 3,
-            "required_periods_per_session": 1
-        },
-        "INS302803": {
-            "id": "INS302803",
-            "name": "Risk Management and Insurance",
-            "expected_students": 45,
-            "credits": 3,
-            "required_periods_per_session": 1
-        },
-        "INS201502": {
-            "id": "INS201502",
-            "name": "Basic Finance",
-            "expected_students": 45,
-            "credits": 3,
-            "required_periods_per_session": 1
-        },
-        "INS306901": {
-            "id": "INS306901",
-            "name": "Decision Support Systems",
-            "expected_students": 45,
-            "credits": 3,
-            "required_periods_per_session": 1
-        },
-        "INS207402": {
-            "id": "INS207402",
-            "name": "Discrete Mathematics",
-            "expected_students": 45,
-            "credits": 3,
-            "required_periods_per_session": 1
-        },
-        "INS30201": {
-            "id": "INS30201",
-            "name": "Global Supply Chain Management",
-            "expected_students": 45,
-            "credits": 3,
-            "required_periods_per_session": 1
-        },
-        "INS328003": {
-            "id": "INS328003",
-            "name": "Data Preparation and Visualization",
-            "expected_students": 45,
-            "credits": 3,
-            "required_periods_per_session": 1
-        },
         "INS301601": {
             "id": "INS301601",
             "name": "Computerized Accounting Practice",
@@ -1259,44 +680,23 @@
             "credits": 3,
             "required_periods_per_session": 1
         },
-        "PEC100802": {
-            "id": "PEC100802",
-            "name": "Marx Leninist Political Economy",
+        "FIB300501": {
+            "id": "FIB300501",
+            "name": "Investment and Portfolio Management",
             "expected_students": 45,
             "credits": 3,
             "required_periods_per_session": 1
         },
-        "INS303002": {
-            "id": "INS303002",
-            "name": "Financial Statement Analysis",
+        "INE105001": {
+            "id": "INE105001",
+            "name": "Microeconomics",
             "expected_students": 45,
             "credits": 3,
             "required_periods_per_session": 1
         },
-        "INS109101": {
-            "id": "INS109101",
-            "name": "English Linguistics 2",
-            "expected_students": 45,
-            "credits": 3,
-            "required_periods_per_session": 1
-        },
-        "INS302901": {
-            "id": "INS302901",
-            "name": "Financial Markets and Institutions",
-            "expected_students": 45,
-            "credits": 3,
-            "required_periods_per_session": 1
-        },
-        "INS323702": {
-            "id": "INS323702",
-            "name": "Electric Motors and Drive Systems",
-            "expected_students": 45,
-            "credits": 3,
-            "required_periods_per_session": 1
-        },
-        "MAT100501": {
-            "id": "MAT100501",
-            "name": "Mathematical Economics",
+        "INE105102": {
+            "id": "INE105102",
+            "name": "Macroeconomics",
             "expected_students": 45,
             "credits": 3,
             "required_periods_per_session": 1
@@ -1308,23 +708,37 @@
             "credits": 3,
             "required_periods_per_session": 1
         },
-        "INS211102": {
-            "id": "INS211102",
-            "name": "Business Organization and Management",
+        "INS303201": {
+            "id": "INS303201",
+            "name": "International Finance",
             "expected_students": 45,
             "credits": 3,
             "required_periods_per_session": 1
         },
-        "INS315101": {
-            "id": "INS315101",
-            "name": "Embedded Control Systems",
+        "INS210902": {
+            "id": "INS210902",
+            "name": "Managerial Accounting",
             "expected_students": 45,
             "credits": 3,
             "required_periods_per_session": 1
         },
-        "INS325201": {
-            "id": "INS325201",
-            "name": "Financial Accounting 2",
+        "PEC100802": {
+            "id": "PEC100802",
+            "name": "Marx Leninist Political Economy",
+            "expected_students": 45,
+            "credits": 3,
+            "required_periods_per_session": 1
+        },
+        "INS201503": {
+            "id": "INS201503",
+            "name": "Basic Finance",
+            "expected_students": 45,
+            "credits": 3,
+            "required_periods_per_session": 1
+        },
+        "INS303002": {
+            "id": "INS303002",
+            "name": "Financial Statement Analysis",
             "expected_students": 45,
             "credits": 3,
             "required_periods_per_session": 1
@@ -1336,9 +750,261 @@
             "credits": 3,
             "required_periods_per_session": 1
         },
-        "INS302203": {
-            "id": "INS302203",
-            "name": "International Business Law",
+        "INS201502": {
+            "id": "INS201502",
+            "name": "Basic Finance",
+            "expected_students": 45,
+            "credits": 3,
+            "required_periods_per_session": 1
+        },
+        "INS109101": {
+            "id": "INS109101",
+            "name": "English Linguistics 2",
+            "expected_students": 45,
+            "credits": 3,
+            "required_periods_per_session": 1
+        },
+        "MAT100501": {
+            "id": "MAT100501",
+            "name": "Mathematical Economics",
+            "expected_students": 45,
+            "credits": 3,
+            "required_periods_per_session": 1
+        },
+        "INS304901": {
+            "id": "INS304901",
+            "name": "Econometrics",
+            "expected_students": 45,
+            "credits": 3,
+            "required_periods_per_session": 1
+        },
+        "BSA301402": {
+            "id": "BSA301402",
+            "name": "Service Marketing",
+            "expected_students": 45,
+            "credits": 3,
+            "required_periods_per_session": 1
+        },
+        "INS207402": {
+            "id": "INS207402",
+            "name": "Discrete Mathematics",
+            "expected_students": 45,
+            "credits": 3,
+            "required_periods_per_session": 1
+        },
+        "PHI100201": {
+            "id": "PHI100201",
+            "name": "Scientific Socialism",
+            "expected_students": 45,
+            "credits": 3,
+            "required_periods_per_session": 1
+        },
+        "INS209801": {
+            "id": "INS209801",
+            "name": "Principles of Accounting",
+            "expected_students": 45,
+            "credits": 3,
+            "required_periods_per_session": 1
+        },
+        "INS325201": {
+            "id": "INS325201",
+            "name": "Financial Accounting 2",
+            "expected_students": 45,
+            "credits": 3,
+            "required_periods_per_session": 1
+        },
+        "INS207303": {
+            "id": "INS207303",
+            "name": "Programming 2",
+            "expected_students": 45,
+            "credits": 3,
+            "required_periods_per_session": 1
+        },
+        "INS300202": {
+            "id": "INS300202",
+            "name": "Financial Accounting 2",
+            "expected_students": 45,
+            "credits": 3,
+            "required_periods_per_session": 1
+        },
+        "INS306002": {
+            "id": "INS306002",
+            "name": "Advanced Database Development",
+            "expected_students": 45,
+            "credits": 3,
+            "required_periods_per_session": 1
+        },
+        "INS201601": {
+            "id": "INS201601",
+            "name": "Risk and Risk Analysis",
+            "expected_students": 45,
+            "credits": 3,
+            "required_periods_per_session": 1
+        },
+        "INS323703": {
+            "id": "INS323703",
+            "name": "Electric Motors and Drive Systems",
+            "expected_students": 45,
+            "credits": 3,
+            "required_periods_per_session": 1
+        },
+        "INS30201": {
+            "id": "INS30201",
+            "name": "Global Supply Chain Management",
+            "expected_students": 45,
+            "credits": 3,
+            "required_periods_per_session": 1
+        },
+        "INS203702": {
+            "id": "INS203702",
+            "name": "Information Systems and Business Processes",
+            "expected_students": 45,
+            "credits": 3,
+            "required_periods_per_session": 1
+        },
+        "INS327102": {
+            "id": "INS327102",
+            "name": "International Accounting",
+            "expected_students": 45,
+            "credits": 3,
+            "required_periods_per_session": 1
+        },
+        "INS211102": {
+            "id": "INS211102",
+            "name": "Business Organization and Management",
+            "expected_students": 45,
+            "credits": 3,
+            "required_periods_per_session": 1
+        },
+        "INS325101": {
+            "id": "INS325101",
+            "name": "Taxation",
+            "expected_students": 45,
+            "credits": 3,
+            "required_periods_per_session": 1
+        },
+        "INS302901": {
+            "id": "INS302901",
+            "name": "Financial Markets and Institutions",
+            "expected_students": 45,
+            "credits": 3,
+            "required_periods_per_session": 1
+        },
+        "INS201101": {
+            "id": "INS201101",
+            "name": "Economic Law",
+            "expected_students": 45,
+            "credits": 3,
+            "required_periods_per_session": 1
+        },
+        "INS315101": {
+            "id": "INS315101",
+            "name": "Embedded Control Systems",
+            "expected_students": 45,
+            "credits": 3,
+            "required_periods_per_session": 1
+        },
+        "INS301603": {
+            "id": "INS301603",
+            "name": "Computerized Accounting Practice",
+            "expected_students": 45,
+            "credits": 3,
+            "required_periods_per_session": 1
+        },
+        "INS302803": {
+            "id": "INS302803",
+            "name": "Risk Management and Insurance",
+            "expected_students": 45,
+            "credits": 3,
+            "required_periods_per_session": 1
+        },
+        "BSA301201": {
+            "id": "BSA301201",
+            "name": "Marketing Research",
+            "expected_students": 45,
+            "credits": 3,
+            "required_periods_per_session": 1
+        },
+        "BSA105501": {
+            "id": "BSA105501",
+            "name": "Business Culture",
+            "expected_students": 45,
+            "credits": 3,
+            "required_periods_per_session": 1
+        },
+        "INS307403": {
+            "id": "INS307403",
+            "name": "Global Information Systems",
+            "expected_students": 45,
+            "credits": 3,
+            "required_periods_per_session": 1
+        },
+        "INS323702": {
+            "id": "INS323702",
+            "name": "Electric Motors and Drive Systems",
+            "expected_students": 45,
+            "credits": 3,
+            "required_periods_per_session": 1
+        },
+        "MAT109204": {
+            "id": "MAT109204",
+            "name": "Advanced Mathematics",
+            "expected_students": 45,
+            "credits": 3,
+            "required_periods_per_session": 1
+        },
+        "INS306901": {
+            "id": "INS306901",
+            "name": "Decision Support Systems",
+            "expected_students": 45,
+            "credits": 3,
+            "required_periods_per_session": 1
+        },
+        "INE105002": {
+            "id": "INE105002",
+            "name": "Microeconomics",
+            "expected_students": 45,
+            "credits": 3,
+            "required_periods_per_session": 1
+        },
+        "BSA301202": {
+            "id": "BSA301202",
+            "name": "Marketing Research",
+            "expected_students": 45,
+            "credits": 3,
+            "required_periods_per_session": 1
+        },
+        "INE300901": {
+            "id": "INE300901",
+            "name": "International Project Management",
+            "expected_students": 45,
+            "credits": 3,
+            "required_periods_per_session": 1
+        },
+        "INS328003": {
+            "id": "INS328003",
+            "name": "Data Preparation and Visualization",
+            "expected_students": 45,
+            "credits": 3,
+            "required_periods_per_session": 1
+        },
+        "INS325402": {
+            "id": "INS325402",
+            "name": "Introduction to Data Science",
+            "expected_students": 45,
+            "credits": 3,
+            "required_periods_per_session": 1
+        },
+        "INS318901": {
+            "id": "INS318901",
+            "name": "Corporate Finance",
+            "expected_students": 45,
+            "credits": 3,
+            "required_periods_per_session": 1
+        },
+        "INS209804": {
+            "id": "INS209804",
+            "name": "Principles of Accounting",
             "expected_students": 45,
             "credits": 3,
             "required_periods_per_session": 1
@@ -1357,76 +1023,6 @@
             "credits": 3,
             "required_periods_per_session": 1
         },
-        "INS209804": {
-            "id": "INS209804",
-            "name": "Principles of Accounting",
-            "expected_students": 45,
-            "credits": 3,
-            "required_periods_per_session": 1
-        },
-        "INS325402": {
-            "id": "INS325402",
-            "name": "Introduction to Data Science",
-            "expected_students": 45,
-            "credits": 3,
-            "required_periods_per_session": 1
-        },
-        "INS203702": {
-            "id": "INS203702",
-            "name": "Information Systems and Business Processes",
-            "expected_students": 45,
-            "credits": 3,
-            "required_periods_per_session": 1
-        },
-        "INE105001": {
-            "id": "INE105001",
-            "name": "Microeconomics",
-            "expected_students": 45,
-            "credits": 3,
-            "required_periods_per_session": 1
-        },
-        "INS201601": {
-            "id": "INS201601",
-            "name": "Risk and Risk Analysis",
-            "expected_students": 45,
-            "credits": 3,
-            "required_periods_per_session": 1
-        },
-        "INS318901": {
-            "id": "INS318901",
-            "name": "Corporate Finance",
-            "expected_students": 45,
-            "credits": 3,
-            "required_periods_per_session": 1
-        },
-        "INS306002": {
-            "id": "INS306002",
-            "name": "Advanced Database Development",
-            "expected_students": 45,
-            "credits": 3,
-            "required_periods_per_session": 1
-        },
-        "INS323703": {
-            "id": "INS323703",
-            "name": "Electric Motors and Drive Systems",
-            "expected_students": 45,
-            "credits": 3,
-            "required_periods_per_session": 1
-        },
-        "MAT109204": {
-            "id": "MAT109204",
-            "name": "Advanced Mathematics",
-            "expected_students": 45,
-            "credits": 3,
-            "required_periods_per_session": 1
-        },
-        "INE105002": {
-            "id": "INE105002",
-            "name": "Microeconomics",
-            "expected_students": 45,
-            "credits": 3,
-            "required_periods_per_session": 1
-        },
         "INE306001": {
             "id": "INE306001",
             "name": "E-Commerce",
@@ -1434,65 +1030,9 @@
             "credits": 3,
             "required_periods_per_session": 1
         },
-        "INS201101": {
-            "id": "INS201101",
-            "name": "Economic Law",
-            "expected_students": 45,
-            "credits": 3,
-            "required_periods_per_session": 1
-        },
-        "INE105102": {
-            "id": "INE105102",
-            "name": "Macroeconomics",
-            "expected_students": 45,
-            "credits": 3,
-            "required_periods_per_session": 1
-        },
-        "INS304901": {
-            "id": "INS304901",
-            "name": "Econometrics",
-            "expected_students": 45,
-            "credits": 3,
-            "required_periods_per_session": 1
-        },
-        "INS308001": {
-            "id": "INS308001",
-            "name": "Artificial Intelligence",
-            "expected_students": 45,
-            "credits": 3,
-            "required_periods_per_session": 1
-        },
-        "BSA105501": {
-            "id": "BSA105501",
-            "name": "Business Culture",
-            "expected_students": 45,
-            "credits": 3,
-            "required_periods_per_session": 1
-        },
-        "BSA301202": {
-            "id": "BSA301202",
-            "name": "Marketing Research",
-            "expected_students": 45,
-            "credits": 3,
-            "required_periods_per_session": 1
-        },
-        "FIB300501": {
-            "id": "FIB300501",
-            "name": "Investment and Portfolio Management",
-            "expected_students": 45,
-            "credits": 3,
-            "required_periods_per_session": 1
-        },
-        "INS327102": {
-            "id": "INS327102",
-            "name": "International Accounting",
-            "expected_students": 45,
-            "credits": 3,
-            "required_periods_per_session": 1
-        },
-        "INE300901": {
-            "id": "INE300901",
-            "name": "International Project Management",
+        "INS302203": {
+            "id": "INS302203",
+            "name": "International Business Law",
             "expected_students": 45,
             "credits": 3,
             "required_periods_per_session": 1
@@ -1504,65 +1044,16 @@
             "credits": 3,
             "required_periods_per_session": 1
         },
-        "INS301603": {
-            "id": "INS301603",
-            "name": "Computerized Accounting Practice",
+        "INS308001": {
+            "id": "INS308001",
+            "name": "Artificial Intelligence",
             "expected_students": 45,
             "credits": 3,
             "required_periods_per_session": 1
         },
-        "INS209801": {
-            "id": "INS209801",
-            "name": "Principles of Accounting",
-            "expected_students": 45,
-            "credits": 3,
-            "required_periods_per_session": 1
-        },
-        "INS201503": {
-            "id": "INS201503",
-            "name": "Basic Finance",
-            "expected_students": 45,
-            "credits": 3,
-            "required_periods_per_session": 1
-        },
-        "INS300202": {
-            "id": "INS300202",
-            "name": "Financial Accounting 2",
-            "expected_students": 45,
-            "credits": 3,
-            "required_periods_per_session": 1
-        },
-        "INS307403": {
-            "id": "INS307403",
-            "name": "Global Information Systems",
-            "expected_students": 45,
-            "credits": 3,
-            "required_periods_per_session": 1
-        },
-        "INS207303": {
-            "id": "INS207303",
-            "name": "Programming 2",
-            "expected_students": 45,
-            "credits": 3,
-            "required_periods_per_session": 1
-        },
-        "PHI100201": {
-            "id": "PHI100201",
-            "name": "Scientific Socialism",
-            "expected_students": 45,
-            "credits": 3,
-            "required_periods_per_session": 1
-        },
-        "INS210902": {
-            "id": "INS210902",
-            "name": "Managerial Accounting",
-            "expected_students": 45,
-            "credits": 3,
-            "required_periods_per_session": 1
-        },
-        "BSA301402": {
-            "id": "BSA301402",
-            "name": "Service Marketing",
+        "RUS500201": {
+            "id": "RUS500201",
+            "name": "Russian Language 1B",
             "expected_students": 45,
             "credits": 3,
             "required_periods_per_session": 1
@@ -1617,7 +1108,8 @@
             "45": 44,
             "46": 45,
             "47": 46,
-            "48": 47
+            "48": 47,
+            "49": 48
         },
         "lecturer_int_map_to_str_id": {
             "0": "1",
@@ -1667,7 +1159,8 @@
             "44": "45",
             "45": "46",
             "46": "47",
-            "47": "48"
+            "47": "48",
+            "48": "49"
         },
         "timeslot_str_id_to_int_map": {
             "1": 0,
@@ -1772,108 +1265,14 @@
             "22": 23
         },
         "scheduled_item_original_id_to_idx_map": {
-            "218": 0,
-            "219": 1,
-            "220": 2,
-            "221": 3,
-            "222": 4,
-            "223": 5,
-            "224": 6,
-            "225": 7,
-            "226": 8,
-            "227": 9,
-            "228": 10,
-            "229": 11,
-            "230": 12,
-            "231": 13,
-            "232": 14,
-            "233": 15,
-            "234": 16,
-            "235": 17,
-            "236": 18,
-            "237": 19,
-            "238": 20,
-            "239": 21,
-            "240": 22,
-            "241": 23,
-            "242": 24,
-            "243": 25,
-            "244": 26,
-            "245": 27,
-            "246": 28,
-            "247": 29,
-            "248": 30,
-            "249": 31,
-            "250": 32,
-            "251": 33,
-            "252": 34,
-            "253": 35,
-            "254": 36,
-            "255": 37,
-            "256": 38,
-            "257": 39,
-            "258": 40,
-            "259": 41,
-            "260": 42,
-            "261": 43,
-            "262": 44,
-            "263": 45,
-            "264": 46,
-            "265": 47,
-            "266": 48,
-            "267": 49
+            "-1": 0,
+            "-2": 1,
+            "-3": 2
         },
         "scheduled_item_idx_to_original_id_map": {
-            "0": 218,
-            "1": 219,
-            "2": 220,
-            "3": 221,
-            "4": 222,
-            "5": 223,
-            "6": 224,
-            "7": 225,
-            "8": 226,
-            "9": 227,
-            "10": 228,
-            "11": 229,
-            "12": 230,
-            "13": 231,
-            "14": 232,
-            "15": 233,
-            "16": 234,
-            "17": 235,
-            "18": 236,
-            "19": 237,
-            "20": 238,
-            "21": 239,
-            "22": 240,
-            "23": 241,
-            "24": 242,
-            "25": 243,
-            "26": 244,
-            "27": 245,
-            "28": 246,
-            "29": 247,
-            "30": 248,
-            "31": 249,
-            "32": 250,
-            "33": 251,
-            "34": 252,
-            "35": 253,
-            "36": 254,
-            "37": 255,
-            "38": 256,
-            "39": 257,
-            "40": 258,
-            "41": 259,
-            "42": 260,
-            "43": 261,
-            "44": 262,
-            "45": 263,
-            "46": 264,
-            "47": 265,
-            "48": 266,
-            "49": 267
+            "0": 0,
+            "1": 1,
+            "2": 2
         }
     },
     "student_enrollments_by_course_id": {
@@ -1886,10 +1285,6 @@
             "21070312",
             "21070410"
         ],
-        "INS306901": [
-            "20070024",
-            "20070666"
-        ],
         "INS203702": [
             "20070024",
             "23070710"
@@ -1899,9 +1294,22 @@
             "21070014",
             "22070820"
         ],
+        "INS306901": [
+            "20070024",
+            "20070666"
+        ],
+        "MAT109204": [
+            "20070226",
+            "22070784",
+            "22071035"
+        ],
         "INS304901": [
             "20070226",
             "22070717"
+        ],
+        "INE105002": [
+            "20070226",
+            "23070200"
         ],
         "INS308001": [
             "20070226",
@@ -1909,13 +1317,11 @@
             "22070651",
             "22070717"
         ],
-        "INE105002": [
-            "20070226",
-            "23070200"
+        "INS302901": [
+            "20070499"
         ],
-        "MAT109204": [
-            "20070226",
-            "22070784",
+        "INS201101": [
+            "20070499",
             "22071035"
         ],
         "MAT100501": [
@@ -1927,13 +1333,6 @@
             "20070499",
             "20070527",
             "21070508"
-        ],
-        "INS302901": [
-            "20070499"
-        ],
-        "INS201101": [
-            "20070499",
-            "22071035"
         ],
         "BSA105501": [
             "20070527",
@@ -1967,9 +1366,6 @@
         "RUS500201": [
             "20070847"
         ],
-        "INS303201": [
-            "21070014"
-        ],
         "INS315101": [
             "21070014",
             "21070275",
@@ -1977,25 +1373,28 @@
             "21070596",
             "22070129"
         ],
-        "INS200903": [
-            "21070071",
-            "21070479"
+        "INS303201": [
+            "21070014"
         ],
         "INS209801": [
             "21070071",
             "22070562"
         ],
-        "INS201502": [
+        "FIB300501": [
             "21070071",
-            "22070949"
+            "22070784"
         ],
         "INS201601": [
             "21070071",
             "23070201"
         ],
-        "FIB300501": [
+        "INS201502": [
             "21070071",
-            "22070784"
+            "22070949"
+        ],
+        "INS200903": [
+            "21070071",
+            "21070479"
         ],
         "INE105102": [
             "21070200",
@@ -2031,13 +1430,13 @@
         "INS325201": [
             "21070479"
         ],
+        "INS309701": [
+            "21070479"
+        ],
         "INS306603": [
             "21070479",
             "22070562",
             "22070717"
-        ],
-        "INS309701": [
-            "21070479"
         ],
         "INE105001": [
             "21070508"
@@ -2056,6 +1455,10 @@
         "INS302803": [
             "22070497"
         ],
+        "INS325402": [
+            "22070651",
+            "22070717"
+        ],
         "INS211102": [
             "22070651",
             "22071035",
@@ -2064,10 +1467,6 @@
         "INS201503": [
             "22070651",
             "22070820"
-        ],
-        "INS325402": [
-            "22070651",
-            "22070717"
         ],
         "INS303002": [
             "22070784"
@@ -2282,6 +1681,176 @@
         ],
         "23071014": [
             "INS201501"
+        ]
+    },
+    "course_potential_lecturers_map": {
+        "INS308001": [
+            0,
+            28
+        ],
+        "INS306002": [
+            1
+        ],
+        "INS306901": [
+            2
+        ],
+        "INS307403": [
+            2
+        ],
+        "MAT100501": [
+            3
+        ],
+        "INS30201": [
+            4
+        ],
+        "INS203702": [
+            5
+        ],
+        "PHI100201": [
+            6,
+            22
+        ],
+        "INS302203": [
+            7
+        ],
+        "BSA301201": [
+            8
+        ],
+        "INS300202": [
+            9
+        ],
+        "INS323703": [
+            10
+        ],
+        "INS315101": [
+            11
+        ],
+        "INS207303": [
+            12
+        ],
+        "RUS500201": [
+            13
+        ],
+        "INS207402": [
+            14
+        ],
+        "MAT109204": [
+            15
+        ],
+        "INS201101": [
+            16
+        ],
+        "INS211102": [
+            17
+        ],
+        "INS327102": [
+            18
+        ],
+        "INS201501": [
+            19
+        ],
+        "INS109101": [
+            20
+        ],
+        "PEC100802": [
+            21
+        ],
+        "INE105002": [
+            23
+        ],
+        "INS315201": [
+            10
+        ],
+        "INS323702": [
+            10
+        ],
+        "INS325402": [
+            24
+        ],
+        "INS306603": [
+            25
+        ],
+        "INS328003": [
+            26
+        ],
+        "INS304901": [
+            27
+        ],
+        "BSA105501": [
+            29
+        ],
+        "BSA301202": [
+            8
+        ],
+        "BSA301402": [
+            30,
+            31
+        ],
+        "INE105001": [
+            23
+        ],
+        "INE105102": [
+            32
+        ],
+        "INE300901": [
+            33
+        ],
+        "INE306001": [
+            34
+        ],
+        "FIB300501": [
+            35
+        ],
+        "INS200903": [
+            9
+        ],
+        "INS201502": [
+            36
+        ],
+        "INS201601": [
+            35
+        ],
+        "INS209801": [
+            9
+        ],
+        "INS201503": [
+            19
+        ],
+        "INS209804": [
+            37
+        ],
+        "INS210902": [
+            38
+        ],
+        "INS301601": [
+            39
+        ],
+        "INS302803": [
+            40
+        ],
+        "INS301603": [
+            41
+        ],
+        "INS303201": [
+            42
+        ],
+        "INS318901": [
+            43
+        ],
+        "INS302901": [
+            44
+        ],
+        "INS303002": [
+            45
+        ],
+        "INS325101": [
+            46
+        ],
+        "INS309701": [
+            47
+        ],
+        "INS325201": [
+            45
         ]
     }
 }

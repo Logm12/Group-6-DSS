@@ -1,0 +1,44 @@
+{
+    "test_run_info": {
+        "module": "cp_module.py_standalone",
+        "semester_id": 1,
+        "run_type": "student_schedule_request"
+    },
+    "cp_solver_metrics": {
+        "solver_status": "OPTIMAL",
+        "solve_time_seconds": 0.163,
+        "model_build_time_seconds": 0.009,
+        "num_items_initial_from_data": 2,
+        "num_items_targeted_for_cp_solver": 2,
+        "num_items_successfully_scheduled_by_cp": 2,
+        "cp_scheduling_success_rate_percent": 100.0,
+        "num_items_unscheduled_by_cp_solver": 0,
+        "list_of_cp_unscheduled_item_original_ids": []
+    },
+    "cp_generated_schedule": [
+        {
+            "schedule_db_id": -1,
+            "course_id_str": "BSA105501",
+            "lecturer_id_db": 30,
+            "classroom_id_db": 3,
+            "timeslot_id_db": 1,
+            "num_students": 45,
+            "course_name": "Business Culture",
+            "lecturer_name": "Alexis Rez",
+            "room_code": "504",
+            "timeslot_info_str": "Monday (07:00:00-09:40:00)"
+        },
+        {
+            "schedule_db_id": -2,
+            "course_id_str": "INE105001",
+            "lecturer_id_db": 24,
+            "classroom_id_db": 1,
+            "timeslot_id_db": 3,
+            "num_students": 45,
+            "course_name": "Microeconomics",
+            "lecturer_name": "Trinh Thi Thu Hang",
+            "room_code": "407",
+            "timeslot_info_str": "Monday (13:00:00-15:40:00)"
+        }
+    ]
+}

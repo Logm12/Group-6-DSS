@@ -2,16 +2,14 @@
 from dataclasses import dataclass, field
 from typing import List, Optional, Set, Tuple
 
-# Type alias for a schedule, which is a list of ScheduledClass objects
-# Using forward reference as ScheduledClass is defined later.
 Schedule = List['ScheduledClass']
 
 @dataclass(frozen=True)
 class TimeSlot:
-    id: str # Original TimeSlotID from DB, converted to string (e.g., "1", "2", ..., "24")
-    day_of_week: str # e.g., 'Monday', 'Tuesday'
-    start_time: str  # HH:MM:SS
-    end_time: str    # HH:MM:SS
+    id: str
+    day_of_week: str
+    start_time: str
+    end_time: str
 
     def __repr__(self):
         return (f"TimeSlot(id='{self.id}', day='{self.day_of_week}', "
@@ -19,10 +17,10 @@ class TimeSlot:
 
 @dataclass(frozen=True)
 class Classroom:
-    id: int # Original ClassroomID from DB
+    id: int
     room_code: str
     capacity: int
-    type: str = 'Theory' # Default type as per DB description (VARCHAR(50), Default: 'Theory')
+    type: str = 'Theory'
 
     def __repr__(self):
         return (f"Classroom(id={self.id}, room_code='{self.room_code}', "
@@ -30,11 +28,8 @@ class Classroom:
 
 @dataclass
 class Instructor:
-    id: str # Original LecturerID from DB (INT), converted to string by data_loader for consistency
+    id: str
     name: str
-    # Set of TimeSlot.id where instructor is unavailable.
-    # data_loader.py maps (BusyDayOfWeek, BusyStartTime, BusyEndTime) from instructorunavailableslots
-    # to these TimeSlot.id(s)
     unavailable_slot_ids: Set[str] = field(default_factory=set)
 
     def __hash__(self):
@@ -50,19 +45,11 @@ class Instructor:
 
 @dataclass
 class Course:
-    id: str # Original CourseID from DB (VARCHAR(20), e.g., 'BSA105501')
+    id: str
     name: str
-    # ExpectedStudents from DB (courses.ExpectedStudents).
-    # Crucial for capacity constraints. data_loader.py must populate this.
-    # Assumes this value is available and > 0 for courses that need scheduling.
     expected_students: int
-    credits: Optional[int] = None # From courses.Credits (currently NULL in sample)
-
-    # Assumes SessionDurationSlots from DB is always 1, as per "đã chuẩn hóa timeslots".
-    # This means one course session fits exactly one TimeSlot.
-    # If a course requires multiple *contiguous* timeslots, this model and associated logic
-    # (especially in CP/GA and constraints) will need significant changes.
-    required_periods_per_session: int = 1 # Based on courses.SessionDurationSlots (currently 1)
+    credits: Optional[int] = None
+    required_periods_per_session: int = 1
 
     def __hash__(self):
         return hash(self.id)
@@ -80,9 +67,8 @@ class Course:
 
 @dataclass(frozen=True)
 class Student:
-    id: str # Original StudentID from DB (VARCHAR(20))
-    name: Optional[str] = None # From students.StudentName, for potential future use (e.g. reports)
-    # Set of Course.id, populated from studentenrollments table
+    id: str
+    name: Optional[str] = None
     enrolled_course_ids: Set[str] = field(default_factory=set)
 
     def __repr__(self):
@@ -92,30 +78,13 @@ class Student:
 
 @dataclass
 class ScheduledClass:
-    """
-    Represents a specific class session to be scheduled or already existing in input.
-    If this is from input `scheduledclasses` table, `id` is its PK.
-    The scheduler assigns instructor_id, classroom_id, timeslot_id.
-    """
-    # Fields that must be provided or are known from input
-    id: int                 # Original ScheduleID from DB (PK of scheduledclasses table if input).
-                            # For newly generated classes by the algorithm, this might be a temporary ID
-                            # or assigned when saving to DB (e.g., negative or unique placeholder).
-    course_id: str          # Course.id (FK to courses.CourseID)
-    semester_id: int        # Semester.id (FK to semesters.SemesterID)
-
-    # num_students for this specific class instance/section.
-    # This value is crucial for the classroom capacity constraint.
-    # For initial scheduling, this is typically derived from Course.expected_students.
-    # If a course is split into multiple sections with different student counts,
-    # this would reflect the count for *this specific section*.
-    # data_loader.py is responsible for populating this correctly.
+    id: int
+    course_id: str
+    semester_id: int
     num_students: int
-
-    # These are the decision variables the scheduler will determine and assign
-    instructor_id: Optional[str] = None  # Instructor.id (FK to lecturers.LecturerID)
-    classroom_id: Optional[int] = None   # Classroom.id (FK to classrooms.ClassroomID)
-    timeslot_id: Optional[str] = None    # TimeSlot.id (FK to timeslots.TimeSlotID)
+    instructor_id: Optional[str] = None
+    classroom_id: Optional[int] = None
+    timeslot_id: Optional[str] = None
 
     def __repr__(self):
         return (f"ScheduledClass(id={self.id}, Course='{self.course_id}', NumStud={self.num_students}, "
@@ -124,34 +93,20 @@ class ScheduledClass:
 
 @dataclass
 class SchedulingMetrics:
-    """
-    Stores metrics evaluating the quality of a generated schedule.
-    """
-    # Overall quality/fitness
-    fitness_score: Optional[float] = None          # e.g., from GA, lower is better if it's a cost
-    
-    # Constraint violations
-    hard_constraints_violated: Optional[int] = 0  # Number of hard constraint violations (should be 0 for a feasible schedule)
-    soft_constraints_penalty: Optional[float] = 0.0 # Total weighted penalty from soft constraint violations
-
-    # Specific soft constraint metrics (examples, counts or specific penalty contributions)
-    student_clashes: Optional[int] = None          # Number of instances where a student has overlapping classes
-    instructor_overloads_count: Optional[int] = None # Number of instructors exceeding max teaching load
-    instructor_underloads_count: Optional[int] = None# Number of instructors below min teaching load
-    instructor_teaching_hours_variance: Optional[float] = None # Statistic for fairness in teaching load
-    instructor_short_breaks_violations: Optional[int] = None # Instances of insufficient breaks between classes for instructors
-    
-    # Resource utilization metrics
-    room_utilization_percentage: Optional[float] = None # (Total student hours / Total available seat hours in used slots)
-    total_seated_students: Optional[int] = None      # Sum of num_students for all scheduled classes
-    total_classroom_capacity_in_used_slots: Optional[int] = None # Sum of capacity for (classroom, timeslot) pairs that are used
-    sum_wasted_room_capacity: Optional[int] = None   # Sum of (classroom.capacity - num_students) for each scheduled class
+    fitness_score: Optional[float] = None
+    hard_constraints_violated: Optional[int] = 0
+    soft_constraints_penalty: Optional[float] = 0.0
+    student_clashes: Optional[int] = None
+    instructor_overloads_count: Optional[int] = None
+    instructor_underloads_count: Optional[int] = None
+    instructor_teaching_hours_variance: Optional[float] = None
+    instructor_short_breaks_violations: Optional[int] = None
+    room_utilization_percentage: Optional[float] = None
+    total_seated_students: Optional[int] = None
+    total_classroom_capacity_in_used_slots: Optional[int] = None
+    sum_wasted_room_capacity: Optional[int] = None
     number_of_rooms_used: Optional[int] = None
-    
-    # Custom accuracy/precision metric (definition to be finalized based on specific project goals)
-    # e.g., percentage of 'preferred' slots used, a composite score of soft constraint satisfaction, etc.
     custom_defined_accuracy: Optional[float] = None
-
     computation_time_seconds: Optional[float] = None
 
     def __repr__(self):
@@ -162,24 +117,13 @@ class SchedulingMetrics:
 
 @dataclass
 class SchedulingResult:
-    """
-    Encapsulates the output of a scheduling run, including the main schedule,
-    its metrics, and potentially alternative solutions for "What-If" scenarios.
-    """
-    run_id: str # A unique identifier for this scheduling run (e.g., UUID, timestamp-based)
-    
-    # The primary/best schedule found by the algorithm
-    main_schedule: Schedule # Type alias: List[ScheduledClass]
+    run_id: str
+    main_schedule: Schedule
     main_metrics: SchedulingMetrics
-
-    # For "What-If" scenarios or if the algorithm is configured to return multiple good solutions.
-    # Each tuple contains an alternative schedule (List[ScheduledClass]) and its corresponding metrics.
     alternative_schedules: List[Tuple[Schedule, SchedulingMetrics]] = field(default_factory=list)
-
-    # Metadata about the scheduling run
-    scenario_name: Optional[str] = None # e.g., "Default Run", "WhatIf: Reduced Room Capacity by 10%"
-    status_message: str = "Completed" # e.g., "Optimal solution found", "Feasible solution found", "Terminated due to timeout", "Error during execution"
-    input_parameters: Optional[dict] = None # Dictionary of key parameters used for this run
+    scenario_name: Optional[str] = None
+    status_message: str = "Completed"
+    input_parameters: Optional[dict] = None
 
     def __repr__(self):
         num_alternatives = len(self.alternative_schedules)

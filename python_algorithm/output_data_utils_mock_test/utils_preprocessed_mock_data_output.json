@@ -1,0 +1,201 @@
+{
+    "settings": {
+        "penalty_student_clash_base": 1000.0,
+        "penalty_lecturer_overload_base": 50.0,
+        "penalty_lecturer_underload_base": 30.0,
+        "penalty_lecturer_insufficient_break_base": 40.0,
+        "penalty_classroom_capacity_violation_base": 10000.0,
+        "penalty_classroom_underutilized_base": 10.0,
+        "penalty_classroom_slightly_empty_base": 2.0,
+        "lecturer_target_teaching_periods_per_week_min": 4,
+        "lecturer_target_teaching_periods_per_week_max": 12,
+        "penalty_lecturer_workload_deviation_base": 20.0,
+        "classroom_slightly_empty_multiplier_base": 10.0,
+        "target_classroom_fill_ratio_min": 0.5,
+        "basic_slot_duration_minutes": 50,
+        "break_duration_minutes": 5,
+        "lecturer_min_break_minutes": 10,
+        "student_max_consecutive_slots": 3,
+        "target_classroom_fill_ratio_max": 1.0,
+        "penalty_student_preference_violation_base": 100.0,
+        "current_semester_id": 1,
+        "penalty_student_clash": 2000.0,
+        "penalty_student_preference_violation": 100.0,
+        "penalty_lecturer_overload": 25.0,
+        "penalty_lecturer_underload": 15.0,
+        "penalty_lecturer_insufficient_break": 20.0,
+        "penalty_lecturer_workload_deviation": 10.0,
+        "penalty_classroom_capacity_violation": 10000.0,
+        "penalty_classroom_underutilized": 10.0,
+        "penalty_classroom_slightly_empty": 2.0
+    },
+    "scheduled_items": {
+        "0": {
+            "original_id": 1,
+            "course_id_str": "COURSE_A",
+            "course_name": "Course Alpha",
+            "num_students": 28,
+            "required_periods_per_session": 1,
+            "assigned_instructor_mapped_int_id": 0,
+            "assigned_classroom_mapped_int_id": 0,
+            "assigned_timeslot_mapped_int_id": 0,
+            "semester_id": 1
+        },
+        "1": {
+            "original_id": 2,
+            "course_id_str": "COURSE_B",
+            "course_name": "Course Bravo",
+            "num_students": 22,
+            "required_periods_per_session": 1,
+            "assigned_instructor_mapped_int_id": null,
+            "assigned_classroom_mapped_int_id": null,
+            "assigned_timeslot_mapped_int_id": null,
+            "semester_id": 1
+        },
+        "2": {
+            "original_id": -1,
+            "course_id_str": "COURSE_A",
+            "course_name": "Course Alpha",
+            "num_students": 28,
+            "required_periods_per_session": 1,
+            "assigned_instructor_mapped_int_id": null,
+            "assigned_classroom_mapped_int_id": null,
+            "assigned_timeslot_mapped_int_id": null,
+            "semester_id": 1
+        }
+    },
+    "lecturers": {
+        "0": {
+            "name": "Dr. Alpha",
+            "original_model_id_str": "101",
+            "original_db_pk_int": 101,
+            "unavailable_slot_ids_mapped": [
+                1
+            ]
+        },
+        "1": {
+            "name": "Prof. Beta",
+            "original_model_id_str": "102",
+            "original_db_pk_int": 102,
+            "unavailable_slot_ids_mapped": []
+        }
+    },
+    "classrooms": {
+        "0": {
+            "capacity": 30,
+            "original_db_pk": 1,
+            "room_code": "CR101",
+            "type": "Lab"
+        },
+        "1": {
+            "capacity": 25,
+            "original_db_pk": 2,
+            "room_code": "CR102",
+            "type": "Theory"
+        }
+    },
+    "timeslots": {
+        "0": {
+            "day_of_week": "Monday",
+            "start_time": "09:00:00",
+            "end_time": "10:40:00",
+            "original_model_id_str": "ts1",
+            "original_db_pk_int": -99
+        },
+        "1": {
+            "day_of_week": "Monday",
+            "start_time": "13:00:00",
+            "end_time": "14:40:00",
+            "original_model_id_str": "ts2",
+            "original_db_pk_int": -99
+        },
+        "2": {
+            "day_of_week": "Tuesday",
+            "start_time": "09:00:00",
+            "end_time": "10:40:00",
+            "original_model_id_str": "ts3",
+            "original_db_pk_int": -99
+        }
+    },
+    "courses_catalog_map": {
+        "COURSE_A": {
+            "id": "COURSE_A",
+            "name": "Course Alpha",
+            "expected_students": 28,
+            "credits": 3,
+            "required_periods_per_session": 1
+        },
+        "COURSE_C": {
+            "id": "COURSE_C",
+            "name": "Course Charlie",
+            "expected_students": 30,
+            "credits": 3,
+            "required_periods_per_session": 1
+        },
+        "COURSE_B": {
+            "id": "COURSE_B",
+            "name": "Course Bravo",
+            "expected_students": 22,
+            "credits": 4,
+            "required_periods_per_session": 1
+        }
+    },
+    "mappings": {
+        "lecturer_str_id_to_int_map": {
+            "101": 0,
+            "102": 1
+        },
+        "lecturer_int_map_to_str_id": {
+            "0": "101",
+            "1": "102"
+        },
+        "timeslot_str_id_to_int_map": {
+            "ts1": 0,
+            "ts2": 1,
+            "ts3": 2
+        },
+        "timeslot_int_map_to_str_id": {
+            "0": "ts1",
+            "1": "ts2",
+            "2": "ts3"
+        },
+        "classroom_pk_to_int_map": {
+            "1": 0,
+            "2": 1
+        },
+        "classroom_int_map_to_pk": {
+            "0": 1,
+            "1": 2
+        },
+        "scheduled_item_original_id_to_idx_map": {
+            "1": 0,
+            "2": 1,
+            "-1": 2
+        },
+        "scheduled_item_idx_to_original_id_map": {
+            "0": 1,
+            "1": 2,
+            "2": -1
+        }
+    },
+    "student_enrollments_by_course_id": {
+        "COURSE_A": [
+            "S001"
+        ],
+        "COURSE_C": [
+            "S001"
+        ],
+        "COURSE_B": [
+            "S002"
+        ]
+    },
+    "courses_enrolled_by_student_id": {
+        "S001": [
+            "COURSE_A",
+            "COURSE_C"
+        ],
+        "S002": [
+            "COURSE_B"
+        ]
+    }
+}

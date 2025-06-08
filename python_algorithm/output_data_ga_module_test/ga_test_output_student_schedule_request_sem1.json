@@ -1,0 +1,53 @@
+{
+    "test_info": {
+        "module": "ga_module_test",
+        "run_type": "student_schedule_request",
+        "semester": 1
+    },
+    "params": {
+        "population_size": 20,
+        "generations": 10,
+        "crossover_rate": 0.8,
+        "mutation_rate": 0.2,
+        "tournament_size": 3,
+        "allow_hard_constraint_violations_in_ga": false
+    },
+    "penalty": 180.0,
+    "metrics": {
+        "final_penalty_score": 180.0,
+        "num_scheduled_events": 2,
+        "hard_constraints_violated_in_final_schedule": false,
+        "soft_constraints_details": {
+            "lecturer_underload": {
+                "count": 6,
+                "penalty_contribution": 180.0
+            }
+        }
+    },
+    "schedule": [
+        {
+            "schedule_db_id": -1,
+            "course_id_str": "BSA105501",
+            "num_students": 45,
+            "course_name": "Business Culture",
+            "lecturer_id_db": 30,
+            "classroom_id_db": 3,
+            "timeslot_id_db": 6,
+            "lecturer_name": "Alexis Rez",
+            "room_code": "504",
+            "timeslot_info_str": "Tuesday (09:50:00-12:30:00)"
+        },
+        {
+            "schedule_db_id": -2,
+            "course_id_str": "INE105001",
+            "num_students": 45,
+            "course_name": "Microeconomics",
+            "lecturer_id_db": 24,
+            "classroom_id_db": 16,
+            "timeslot_id_db": 18,
+            "lecturer_name": "Trinh Thi Thu Hang",
+            "room_code": "606",
+            "timeslot_info_str": "Friday (09:50:00-12:30:00)"
+        }
+    ]
+}

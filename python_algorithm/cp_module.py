@@ -1,30 +1,29 @@
-# File: htdocs/DSS/python_algorithm/cp_module.py
 from ortools.sat.python import cp_model
 import time as pytime
-from collections import defaultdict
+from collections import defaultdict 
 import traceback
 from typing import Optional, Dict, Any, List, Tuple
-import os # Được thêm vào từ code của bạn
+import os 
+import sys 
 
 class CourseSchedulingCPSAT:
-    def __init__(self, processed_data: dict, progress_logger: Optional[callable] = None):
+    def __init__(self,
+                 processed_data: dict,
+                 progress_logger: Optional[callable] = None,
+                 run_type: str = "admin_optimize_semester"):
+
         self.data = processed_data
         self.model = cp_model.CpModel()
         self.progress_logger = progress_logger
+        self.run_type = run_type
 
         self.initial_scheduled_item_keys_int: List[int] = list(self.data.get("scheduled_items", {}).keys())
-        
-        self.all_lecturer_ids_int_mapped = list(self.data.get("lecturers", {}).keys())
-        self.all_classroom_ids_int_mapped = list(self.data.get("classrooms", {}).keys())
-        self.all_timeslot_ids_int_mapped = list(self.data.get("timeslots", {}).keys())
 
-        self.mappings = self.data.get("mappings", {
-            "lecturer_str_id_to_int_map": {}, "lecturer_int_map_to_str_id": {},
-            "timeslot_str_id_to_int_map": {}, "timeslot_int_map_to_str_id": {},
-            "classroom_pk_to_int_map": {}, "classroom_int_map_to_pk": {},
-            "scheduled_item_db_id_to_idx_map": {}, "scheduled_item_idx_to_db_id_map": {},
-        })
+        self.all_lecturer_ids_int_mapped: List[int] = list(self.data.get("lecturers", {}).keys())
+        self.all_classroom_ids_int_mapped: List[int] = list(self.data.get("classrooms", {}).keys())
+        self.all_timeslot_ids_int_mapped: List[int] = list(self.data.get("timeslots", {}).keys())
 
+        self.mappings = self.data.get("mappings", {})
         self.item_vars: Dict[int, Dict[str, Any]] = {}
         self.items_to_schedule_keys_int: List[int] = []
 
@@ -34,268 +33,334 @@ class CourseSchedulingCPSAT:
         self.num_items_targeted: int = 0
         self.num_items_successfully_scheduled: int = 0
         self.scheduling_success_rate: float = 0.0
-        self.unscheduled_item_original_db_ids: List[int] = []
+        self.unscheduled_item_original_ids: List[Any] = []
 
-        self._log_cp("CP-SAT Module Initialized.")
+        self._log_cp(f"CP-SAT Module Initialized. Run Type: '{self.run_type}'.")
         if not self.initial_scheduled_item_keys_int:
-            self._log_cp("WARNING: No initial scheduled_items found in processed_data during CP-SAT init.")
+            self._log_cp("WARNING: No initial 'scheduled_items' found in processed_data. Solver might have no tasks.")
 
     def _log_cp(self, message: str):
         prefix = "CP_SAT"
         if self.progress_logger:
             self.progress_logger(f"{prefix}: {message}")
         else:
-            print(f"{prefix}_PRINT: {message}")
+            print(f"{prefix}_STDOUT: {message}")
 
     def _pre_filter_and_create_variables(self):
-        self._log_cp("Starting pre-filtering and variable creation...")
+        self._log_cp("Starting pre-filtering and decision variable creation...")
         if not self.initial_scheduled_item_keys_int:
-            self._log_cp("Pre-filter: No initial_scheduled_item_keys_int to process. Aborting variable creation.")
+            self._log_cp("Pre-filter SKIPPED: No initial items to process.")
             return
 
-        temp_items_to_schedule_keys = []
-        skipped_count = 0
-        for item_key_int in self.initial_scheduled_item_keys_int:
-            item_detail = self.data["scheduled_items"].get(item_key_int)
-            if not item_detail:
-                self._log_cp(f"WARNING: Pre-filter - Scheduled Item Key {item_key_int} not found in processed_data['scheduled_items']. Skipping.")
-                skipped_count += 1
+        temp_items_to_schedule_keys_after_filter: List[int] = []
+        items_skipped_count = 0
+        
+        course_lecturer_map = self.data.get("course_potential_lecturers_map", {})
+
+        for item_key_int_mapped_idx in self.initial_scheduled_item_keys_int:
+            item_details_from_processed_data = self.data["scheduled_items"].get(item_key_int_mapped_idx)
+            if not item_details_from_processed_data:
+                self._log_cp(f"WARNING: Pre-filter - Mapped Item Key {item_key_int_mapped_idx} not found. Skipping.")
+                items_skipped_count += 1
                 continue
-            
-            original_db_id = item_detail.get("original_db_id") 
-            course_id_str = item_detail.get("course_id_str")
-            # course_name_for_log = item_detail.get("course_name", "N/A") # Không dùng trực tiếp
 
-            assigned_lecturer_mapped_int_id = item_detail.get("assigned_instructor_mapped_int_id")
+            original_item_id = item_details_from_processed_data.get("original_id")
+            course_id_str_for_item = item_details_from_processed_data.get("course_id_str")
+            item_num_students = item_details_from_processed_data.get("num_students", 0)
+
+            if item_num_students <= 0 and self.run_type != "student_schedule_request":
+                 self._log_cp(f"WARNING: Pre-filter - Item {item_key_int_mapped_idx} (Course: {course_id_str_for_item}) has {item_num_students} students.")
             
-            if assigned_lecturer_mapped_int_id is None:
-                 self._log_cp(f"CRITICAL: Pre-filter - Item Key {item_key_int} (Course: {course_id_str}, DB_ID: {original_db_id}) "
-                             f"has NO pre-assigned instructor. CP-SAT (as currently written) requires pre-assigned instructor. Skipping item.")
-                 skipped_count += 1
-                 continue
-            if assigned_lecturer_mapped_int_id not in self.all_lecturer_ids_int_mapped:
-                self._log_cp(f"CRITICAL: Pre-filter - Item Key {item_key_int} (Course: {course_id_str}, DB_ID: {original_db_id}) "
-                             f"has invalid assigned_instructor_mapped_int_id ({assigned_lecturer_mapped_int_id}). Skipping.")
-                skipped_count += 1
+            lecturer_cp_var = None
+            fixed_lecturer_id_for_item: Optional[int] = None
+            potential_lecturers_for_this_item_mapped_ids: List[int] = []
+
+
+            if self.run_type == "admin_optimize_semester":
+                pre_assigned_lecturer_mapped_int_id = item_details_from_processed_data.get("assigned_instructor_mapped_int_id")
+                if pre_assigned_lecturer_mapped_int_id is None:
+                    self._log_cp(f"INFO: Admin Run - Item {item_key_int_mapped_idx} (Course: {course_id_str_for_item}) has NO pre-assigned instructor. Skipping this item as current admin logic requires it.")
+                    items_skipped_count += 1
+                    continue
+                if pre_assigned_lecturer_mapped_int_id not in self.all_lecturer_ids_int_mapped:
+                    self._log_cp(f"ERROR: Admin Run - Item {item_key_int_mapped_idx} (Course: {course_id_str_for_item}) has invalid pre-assigned instructor ID ({pre_assigned_lecturer_mapped_int_id}). Skipping.")
+                    items_skipped_count += 1
+                    continue
+                lecturer_cp_var = self.model.NewIntVar(pre_assigned_lecturer_mapped_int_id, pre_assigned_lecturer_mapped_int_id, name=f"item_{item_key_int_mapped_idx}_lect_fixed")
+                fixed_lecturer_id_for_item = pre_assigned_lecturer_mapped_int_id
+                potential_lecturers_for_this_item_mapped_ids = [pre_assigned_lecturer_mapped_int_id]
+
+            elif self.run_type == "student_schedule_request":
+                if not self.all_lecturer_ids_int_mapped:
+                    self._log_cp(f"ERROR: Student Run - No lecturers available system-wide. Cannot assign lecturer for item {item_key_int_mapped_idx}. Skipping.")
+                    items_skipped_count += 1
+                    continue
+                
+                potential_lecturers_for_this_item_mapped_ids = course_lecturer_map.get(course_id_str_for_item, [])
+                
+                if not potential_lecturers_for_this_item_mapped_ids:
+                    self._log_cp(f"WARNING: Student Run - Item {item_key_int_mapped_idx} (Course: {course_id_str_for_item}): No specific lecturers found in course_potential_lecturers_map. Falling back to all available lecturers.")
+                    potential_lecturers_for_this_item_mapped_ids = self.all_lecturer_ids_int_mapped
+                    if not potential_lecturers_for_this_item_mapped_ids:
+                         self._log_cp(f"ERROR: Student Run - Fallback failed, no lecturers available at all for item {item_key_int_mapped_idx}. Skipping.")
+                         items_skipped_count += 1
+                         continue
+
+                lecturer_cp_var = self.model.NewIntVarFromDomain(
+                    cp_model.Domain.FromValues(potential_lecturers_for_this_item_mapped_ids),
+                    name=f"item_{item_key_int_mapped_idx}_lect_choice"
+                )
+            else:
+                self._log_cp(f"ERROR: Pre-filter - Unknown run_type '{self.run_type}'. Skipping item {item_key_int_mapped_idx}.")
+                items_skipped_count += 1
                 continue
-            
-            lecturer_var = self.model.NewIntVar(assigned_lecturer_mapped_int_id, assigned_lecturer_mapped_int_id, name=f"item_{item_key_int}_lect_var")
 
-            valid_timeslots_for_item_domain = self.all_timeslot_ids_int_mapped
-
-            item_num_students = item_detail.get("num_students", 0)
-            if item_num_students == 0:
-                 self._log_cp(f"WARNING: Pre-filter - Item Key {item_key_int} (Course: {course_id_str}, DB_ID: {original_db_id}) has 0 num_students.")
-
-            valid_classrooms_for_item_domain = [
+            suitable_classrooms_for_item_mapped_ids = [
                 cr_mapped_int_id for cr_mapped_int_id in self.all_classroom_ids_int_mapped
                 if self.data["classrooms"].get(cr_mapped_int_id, {}).get("capacity", 0) >= item_num_students
             ]
-            
-            if not valid_classrooms_for_item_domain:
-                self._log_cp(f"INFO: Pre-filter - Item Key {item_key_int} (Course: {course_id_str}, DB_ID: {original_db_id}, Students: {item_num_students}) "
-                             f"unschedulable due to: no suitable classrooms (capacity). Skipping.")
-                skipped_count += 1
+            if not suitable_classrooms_for_item_mapped_ids:
+                self._log_cp(f"INFO: Pre-filter - Item {item_key_int_mapped_idx} (Course: {course_id_str_for_item}, Students: {item_num_students}) unschedulable: no suitable classrooms. Skipping.")
+                items_skipped_count += 1
                 continue
-            
-            if not valid_timeslots_for_item_domain: 
-                self._log_cp(f"INFO: Pre-filter - Item Key {item_key_int} (Course: {course_id_str}, DB_ID: {original_db_id}) "
-                             f"unschedulable due to: no available timeslots. Skipping.")
-                skipped_count += 1
-                continue
+            classroom_cp_var = self.model.NewIntVarFromDomain(
+                cp_model.Domain.FromValues(suitable_classrooms_for_item_mapped_ids),
+                name=f"item_{item_key_int_mapped_idx}_room"
+            )
 
-            temp_items_to_schedule_keys.append(item_key_int)
-            
-            classroom_var = self.model.NewIntVarFromDomain(cp_model.Domain.FromValues(valid_classrooms_for_item_domain), name=f"item_{item_key_int}_room_var")
-            timeslot_var = self.model.NewIntVarFromDomain(cp_model.Domain.FromValues(valid_timeslots_for_item_domain), name=f"item_{item_key_int}_ts_var")
-            
-            self.item_vars[item_key_int] = {
-                "lecturer_var": lecturer_var, 
-                "classroom_var": classroom_var,
-                "timeslot_var": timeslot_var,
-                "fixed_assigned_lecturer_mapped_int_id": assigned_lecturer_mapped_int_id, 
-                "classroom_domain_values_int": valid_classrooms_for_item_domain,
-                "timeslot_domain_values_int": valid_timeslots_for_item_domain,
-                "original_db_id": original_db_id, 
-                "course_id_str": course_id_str    
+            if not self.all_timeslot_ids_int_mapped:
+                self._log_cp(f"ERROR: Pre-filter - No timeslots available. Cannot assign timeslot for item {item_key_int_mapped_idx}. Skipping.")
+                items_skipped_count += 1
+                continue
+            timeslot_cp_var = self.model.NewIntVarFromDomain(
+                cp_model.Domain.FromValues(self.all_timeslot_ids_int_mapped),
+                name=f"item_{item_key_int_mapped_idx}_ts"
+            )
+
+            temp_items_to_schedule_keys_after_filter.append(item_key_int_mapped_idx)
+            self.item_vars[item_key_int_mapped_idx] = {
+                "lecturer_var": lecturer_cp_var,
+                "classroom_var": classroom_cp_var,
+                "timeslot_var": timeslot_cp_var,
+                "fixed_assigned_lecturer_mapped_int_id": fixed_lecturer_id_for_item,
+                "lecturer_domain_values_int": potential_lecturers_for_this_item_mapped_ids,
+                "classroom_domain_values_int": suitable_classrooms_for_item_mapped_ids,
+                "timeslot_domain_values_int": self.all_timeslot_ids_int_mapped,
+                "original_id": original_item_id,
+                "course_id_str": course_id_str_for_item,
+                "num_students": item_num_students
             }
-        
-        self.items_to_schedule_keys_int = temp_items_to_schedule_keys
+
+        self.items_to_schedule_keys_int = temp_items_to_schedule_keys_after_filter
         self.num_items_targeted = len(self.items_to_schedule_keys_int)
 
-        if skipped_count > 0:
-             self._log_cp(f"Pre-filter: Skipped {skipped_count} items due to missing data, invalid assignments, or no suitable resources pre-solver.")
+        if items_skipped_count > 0:
+             self._log_cp(f"Pre-filter: Skipped {items_skipped_count} item(s).")
         if not self.items_to_schedule_keys_int:
-             self._log_cp("WARNING: Pre-filter - No items are schedulable after pre-filtering.")
+             self._log_cp("WARNING: Pre-filter - No items schedulable after pre-filtering.")
         else:
-            self._log_cp(f"Pre-filter: {self.num_items_targeted} items are potentially schedulable and variables created.")
-        self._log_cp("Finished pre-filtering and variable creation.")
+            self._log_cp(f"Pre-filter: {self.num_items_targeted} item(s) potentially schedulable; variables created.")
+        self._log_cp("Finished pre-filtering and variable creation phase.")
 
     def _add_constraints(self):
-        self._log_cp("Adding hard constraints to the model...")
+        self._log_cp("Adding hard constraints to the CP-SAT model...")
         if not self.items_to_schedule_keys_int or not self.item_vars:
-            self._log_cp("No items or variables to add constraints for. Skipping constraint addition.")
+            self._log_cp("Constraint Addition SKIPPED: No items or variables defined.")
             return
 
-        num_schedulable_items = self.num_items_targeted
+        num_items = len(self.items_to_schedule_keys_int)
+
+        # HC: Classroom-Timeslot exclusivity (a classroom cannot be used by two different items at the same timeslot)
+        if num_items > 1:
+            for i in range(num_items):
+                for j in range(i + 1, num_items):
+                    item1_k = self.items_to_schedule_keys_int[i]
+                    item2_k = self.items_to_schedule_keys_int[j]
+                    if item1_k not in self.item_vars or item2_k not in self.item_vars: continue
+
+                    vars1 = self.item_vars[item1_k]
+                    vars2 = self.item_vars[item2_k]
+
+                    b_room_eq = self.model.NewBoolVar(f'b_room_eq_{item1_k}_{item2_k}')
+                    self.model.Add(vars1["classroom_var"] == vars2["classroom_var"]).OnlyEnforceIf(b_room_eq)
+                    self.model.Add(vars1["classroom_var"] != vars2["classroom_var"]).OnlyEnforceIf(b_room_eq.Not())
+                    self.model.Add(vars1["timeslot_var"] != vars2["timeslot_var"]).OnlyEnforceIf(b_room_eq)
         
-        if num_schedulable_items > 1:
-            constraints_added_hc1 = 0
-            constraints_added_hc2 = 0
-            for i in range(num_schedulable_items):
-                for j in range(i + 1, num_schedulable_items):
-                    item1_key_int = self.items_to_schedule_keys_int[i]
-                    item2_key_int = self.items_to_schedule_keys_int[j]
-
-                    if item1_key_int not in self.item_vars or item2_key_int not in self.item_vars:
-                        continue 
-
-                    vars1 = self.item_vars[item1_key_int]
-                    vars2 = self.item_vars[item2_key_int]
-
-                    if vars1["fixed_assigned_lecturer_mapped_int_id"] == vars2["fixed_assigned_lecturer_mapped_int_id"]:
-                        self.model.Add(vars1["timeslot_var"] != vars2["timeslot_var"])
-                        constraints_added_hc1 +=1
-
-                    b_room_equal = self.model.NewBoolVar(f'b_room_eq_item{item1_key_int}_item{item2_key_int}')
-                    self.model.Add(vars1["classroom_var"] == vars2["classroom_var"]).OnlyEnforceIf(b_room_equal)
-                    self.model.Add(vars1["classroom_var"] != vars2["classroom_var"]).OnlyEnforceIf(b_room_equal.Not())
-                    self.model.Add(vars1["timeslot_var"] != vars2["timeslot_var"]).OnlyEnforceIf(b_room_equal)
-                    constraints_added_hc2 +=1
-            self._log_cp(f"Added {constraints_added_hc1} HC1 (Lecturer-Timeslot) and {constraints_added_hc2} HC2 (Classroom-Timeslot) constraints.")
-        else:
-            self._log_cp("Skipped HC1 & HC2: Less than 2 schedulable items.")
-
-        constraints_added_hc3 = 0
-        for item_key_int in self.items_to_schedule_keys_int:
-            if item_key_int not in self.item_vars: continue
-
-            item_vars_entry = self.item_vars[item_key_int]
-            assigned_lecturer_mapped_int_id = item_vars_entry["fixed_assigned_lecturer_mapped_int_id"]
-            item_timeslot_var = item_vars_entry["timeslot_var"]
+        if self.run_type == "admin_optimize_semester":
+            # HC: Lecturer-Timeslot exclusivity (fixed lecturer can't teach two classes at same time)
+            if num_items > 1:
+                for i in range(num_items):
+                    for j in range(i + 1, num_items):
+                        item1_k_adm = self.items_to_schedule_keys_int[i]
+                        item2_k_adm = self.items_to_schedule_keys_int[j]
+                        if item1_k_adm not in self.item_vars or item2_k_adm not in self.item_vars: continue
+                        
+                        vars1_adm = self.item_vars[item1_k_adm]
+                        vars2_adm = self.item_vars[item2_k_adm]
+                        
+                        if vars1_adm["fixed_assigned_lecturer_mapped_int_id"] is not None and \
+                           vars1_adm["fixed_assigned_lecturer_mapped_int_id"] == vars2_adm.get("fixed_assigned_lecturer_mapped_int_id"):
+                            self.model.Add(vars1_adm["timeslot_var"] != vars2_adm["timeslot_var"])
             
-            lecturer_details = self.data["lecturers"].get(assigned_lecturer_mapped_int_id)
-            if not lecturer_details:
-                self._log_cp(f"WARNING: HC3 - Lecturer MAPPED ID {assigned_lecturer_mapped_int_id} for item key {item_key_int} not in self.data['lecturers'].")
-                continue
-            
-            unavailable_mapped_ts_int_ids = lecturer_details.get("unavailable_slot_ids_mapped", []) 
-            if not unavailable_mapped_ts_int_ids: continue
+            # HC: Fixed lecturer cannot be scheduled in their unavailable slots.
+            for item_k_adm_hc3 in self.items_to_schedule_keys_int:
+                if item_k_adm_hc3 not in self.item_vars: continue
+                item_vars_adm = self.item_vars[item_k_adm_hc3]
+                fixed_lect_id = item_vars_adm.get("fixed_assigned_lecturer_mapped_int_id")
+                item_ts_var_adm = item_vars_adm["timeslot_var"]
+                
+                if fixed_lect_id is not None:
+                    lect_details = self.data["lecturers"].get(fixed_lect_id)
+                    if lect_details:
+                        for busy_ts_id in lect_details.get("unavailable_slot_ids_mapped", []):
+                            self.model.Add(item_ts_var_adm != busy_ts_id)
 
-            for busy_mapped_ts_int_id in unavailable_mapped_ts_int_ids:
-                self.model.Add(item_timeslot_var != busy_mapped_ts_int_id)
-                constraints_added_hc3 +=1
-        self._log_cp(f"Added {constraints_added_hc3} HC3 (Instructor Unavailable Slots) constraints.")
+        elif self.run_type == "student_schedule_request":
+            # HC: Lecturer-Timeslot exclusivity (variable lecturer can't teach two classes at same time)
+            if num_items > 1:
+                for i in range(num_items):
+                    for j in range(i + 1, num_items):
+                        item1_k_std = self.items_to_schedule_keys_int[i]
+                        item2_k_std = self.items_to_schedule_keys_int[j]
+                        if item1_k_std not in self.item_vars or item2_k_std not in self.item_vars: continue
+
+                        vars1_std = self.item_vars[item1_k_std]
+                        vars2_std = self.item_vars[item2_k_std]
+
+                        b_lect_eq_std = self.model.NewBoolVar(f'b_lect_eq_std_{item1_k_std}_{item2_k_std}')
+                        self.model.Add(vars1_std["lecturer_var"] == vars2_std["lecturer_var"]).OnlyEnforceIf(b_lect_eq_std)
+                        self.model.Add(vars1_std["lecturer_var"] != vars2_std["lecturer_var"]).OnlyEnforceIf(b_lect_eq_std.Not())
+                        self.model.Add(vars1_std["timeslot_var"] != vars2_std["timeslot_var"]).OnlyEnforceIf(b_lect_eq_std)
+
+            # HC: An item's assigned lecturer cannot be unavailable in the item's assigned timeslot.
+            for item_k_std_hc3 in self.items_to_schedule_keys_int:
+                if item_k_std_hc3 not in self.item_vars: continue
+                item_lect_var = self.item_vars[item_k_std_hc3]["lecturer_var"]
+                item_ts_var = self.item_vars[item_k_std_hc3]["timeslot_var"]
+
+                for lecturer_mapped_id, lect_detail in self.data.get("lecturers", {}).items():
+                    unavailable_slots = lect_detail.get("unavailable_slot_ids_mapped", [])
+                    if unavailable_slots:
+                        for busy_ts_id in unavailable_slots:
+                            b_is_this_lect = self.model.NewBoolVar(f'b_item{item_k_std_hc3}_is_lect{lecturer_mapped_id}_busy_slot{busy_ts_id}')
+                            self.model.Add(item_lect_var == lecturer_mapped_id).OnlyEnforceIf(b_is_this_lect)
+                            self.model.Add(item_lect_var != lecturer_mapped_id).OnlyEnforceIf(b_is_this_lect.Not())
+                            self.model.Add(item_ts_var != busy_ts_id).OnlyEnforceIf(b_is_this_lect)
+            
+            # HC: Student Self-Clash (all items for this student must be in different timeslots).
+            if num_items > 1:
+                student_item_timeslot_vars = [self.item_vars[key]["timeslot_var"] for key in self.items_to_schedule_keys_int if key in self.item_vars]
+                if len(student_item_timeslot_vars) > 1 :
+                    self.model.AddAllDifferent(student_item_timeslot_vars)
+        
         self._log_cp("Finished adding hard constraints.")
 
+
     def solve(self, time_limit_seconds: float = 30.0) -> Tuple[List[Dict[str, Any]], Dict[str, Any]]:
-        self._log_cp("Starting CP-SAT model solving process...")
+        self._log_cp(f"CP-SAT Solver Process Starting for run_type: '{self.run_type}'.")
         self.solver_status = None; self.solve_time_seconds = 0.0; self.model_build_time_seconds = 0.0
         self.num_items_successfully_scheduled = 0; self.scheduling_success_rate = 0.0
-        self.unscheduled_item_original_db_ids = []
+        self.unscheduled_item_original_ids = []
 
-        start_build_time = pytime.time()
+        model_build_start_time = pytime.time()
         try:
             self._pre_filter_and_create_variables()
             if not self.items_to_schedule_keys_int or not self.item_vars:
-                self._log_cp("Solver: No schedulable items after pre-filtering. Cannot solve.")
-                self.solver_status = "NO_ITEMS_TO_SCHEDULE_POST_PREFILTER"
-                self.model_build_time_seconds = pytime.time() - start_build_time
+                self._log_cp("Solver ABORTED: No schedulable items after pre-filtering.")
+                self.solver_status = "NO_ITEMS_POST_PREFILTER"
+                self.model_build_time_seconds = pytime.time() - model_build_start_time
                 return [], self.get_solution_metrics()
+            
             self._add_constraints()
-        except Exception as e_build:
-            self._log_cp(f"CRITICAL ERROR during model building: {e_build}\n{traceback.format_exc()}")
-            self.model_build_time_seconds = pytime.time() - start_build_time
+        except Exception as e_model_build:
+            self._log_cp(f"CRITICAL ERROR during CP-SAT model building: {e_model_build}\n{traceback.format_exc()}")
+            self.model_build_time_seconds = pytime.time() - model_build_start_time
             self.solver_status = "MODEL_BUILD_ERROR"
             return [], self.get_solution_metrics()
         
-        self.model_build_time_seconds = pytime.time() - start_build_time
-        self._log_cp(f"Time to build CP-SAT model for {self.num_items_targeted} items: {self.model_build_time_seconds:.2f}s.")
+        self.model_build_time_seconds = pytime.time() - model_build_start_time
 
         if self.num_items_targeted == 0:
-            self._log_cp("Solver: No items to solve after model build. Returning empty schedule.")
-            self.solver_status = "NO_ITEMS_TO_SCHEDULE_POST_BUILD"
+            self._log_cp("Solver SKIPPED: No items targeted for solving. Returning empty.")
+            self.solver_status = "NO_ITEMS_TARGETED"
             return [], self.get_solution_metrics()
 
-        solver = cp_model.CpSolver()
-        solver.parameters.log_search_progress = True 
-        if time_limit_seconds is not None: solver.parameters.max_time_in_seconds = float(time_limit_seconds)
+        cp_solver_instance = cp_model.CpSolver()
+        cp_solver_instance.parameters.log_search_progress = False
+        if time_limit_seconds is not None and time_limit_seconds > 0:
+            cp_solver_instance.parameters.max_time_in_seconds = float(time_limit_seconds)
         
-        self._log_cp(f"Solver starting... Time limit: {solver.parameters.max_time_in_seconds}s. Solving for {self.num_items_targeted} items.")
-        start_solve_time = pytime.time()
-        status_code = solver.Solve(self.model)
-        self.solve_time_seconds = pytime.time() - start_solve_time
-        self.solver_status = solver.StatusName(status_code)
-        self._log_cp(f"Solver finished in {self.solve_time_seconds:.2f}s. Status: {self.solver_status}")
+        solver_start_time = pytime.time()
+        solution_status_code = cp_solver_instance.Solve(self.model)
+        self.solve_time_seconds = pytime.time() - solver_start_time
+        self.solver_status = cp_solver_instance.StatusName(solution_status_code)
+        self._log_cp(f"CP-SAT solver finished. Time: {self.solve_time_seconds:.3f}s. Status: {self.solver_status}")
 
-        solutions_list_of_dicts = []
-        if status_code == cp_model.OPTIMAL or status_code == cp_model.FEASIBLE:
-            self._log_cp("Solver found a FEASIBLE or OPTIMAL solution. Extracting schedule...")
-            for item_key_int in self.items_to_schedule_keys_int:
-                item_vars_entry = self.item_vars.get(item_key_int)
-                if not item_vars_entry: self._log_cp(f"WARNING: Item key {item_key_int} not in item_vars post-solve. Skipping."); continue
+        extracted_solutions_list: List[Dict[str, Any]] = []
+        if solution_status_code == cp_model.OPTIMAL or solution_status_code == cp_model.FEASIBLE:
+            for item_key_sol in self.items_to_schedule_keys_int:
+                item_vars_extract = self.item_vars.get(item_key_sol)
+                if not item_vars_extract: continue
 
-                original_item_db_id = item_vars_entry["original_db_id"]
-                item_course_id_str = item_vars_entry["course_id_str"]
+                original_item_id_sol = item_vars_extract["original_id"]
                 try:
-                    lect_mapped_int_id_val = item_vars_entry["fixed_assigned_lecturer_mapped_int_id"]
-                    room_mapped_int_id_val = solver.Value(item_vars_entry["classroom_var"])
-                    ts_mapped_int_id_val = solver.Value(item_vars_entry["timeslot_var"])
+                    assigned_lect_mapped_id = cp_solver_instance.Value(item_vars_extract["lecturer_var"])
+                    assigned_room_mapped_id = cp_solver_instance.Value(item_vars_extract["classroom_var"])
+                    assigned_ts_mapped_id = cp_solver_instance.Value(item_vars_extract["timeslot_var"])
 
-                    if not (isinstance(lect_mapped_int_id_val, int) and isinstance(room_mapped_int_id_val, int) and isinstance(ts_mapped_int_id_val, int)):
-                        self._log_cp(f"INFO: Item Key {item_key_int} (DB_ID: {original_item_db_id}, Course: {item_course_id_str}) not fully assigned. L:{lect_mapped_int_id_val}, R:{room_mapped_int_id_val}, T:{ts_mapped_int_id_val}. Unscheduled.")
-                        self.unscheduled_item_original_db_ids.append(original_item_db_id); continue
+                    lect_details_sol = self.data["lecturers"].get(assigned_lect_mapped_id)
+                    room_details_sol = self.data["classrooms"].get(assigned_room_mapped_id)
+                    ts_details_sol = self.data["timeslots"].get(assigned_ts_mapped_id)
+
+                    if not (lect_details_sol and room_details_sol and ts_details_sol):
+                        self._log_cp(f"WARN: Missing details for mapped IDs for item {original_item_id_sol}. Marking unscheduled.")
+                        self.unscheduled_item_original_ids.append(original_item_id_sol); continue
                     
-                    lecturer_data = self.data["lecturers"].get(lect_mapped_int_id_val)
-                    classroom_data = self.data["classrooms"].get(room_mapped_int_id_val)
-                    timeslot_data = self.data["timeslots"].get(ts_mapped_int_id_val)
+                    orig_lect_pk = lect_details_sol.get("original_db_pk_int")
+                    orig_room_pk = room_details_sol.get("original_db_pk")
+                    orig_ts_pk   = ts_details_sol.get("original_db_pk_int")
 
-                    if not lecturer_data or not classroom_data or not timeslot_data:
-                        self._log_cp(f"ERROR: No processed data for mapped IDs for item key {item_key_int} (DB_ID: {original_item_db_id}). L_m:{lect_mapped_int_id_val}, R_m:{room_mapped_int_id_val}, T_m:{ts_mapped_int_id_val}. Unscheduled.")
-                        self.unscheduled_item_original_db_ids.append(original_item_db_id); continue
+                    if orig_lect_pk is None or orig_room_pk is None or orig_ts_pk is None:
+                         self._log_cp(f"WARN: Missing original DB PK for assigned entities for item {original_item_id_sol}. Marking unscheduled.")
+                         self.unscheduled_item_original_ids.append(original_item_id_sol); continue
 
-                    lect_original_db_pk = lecturer_data.get("original_db_pk_int")
-                    room_original_db_pk = classroom_data.get("original_db_pk")   
-                    ts_original_db_pk = timeslot_data.get("original_db_pk_int")  
+                    item_details_proc_data = self.data["scheduled_items"].get(item_key_sol, {})
 
-                    if lect_original_db_pk is None or room_original_db_pk is None or ts_original_db_pk is None:
-                        self._log_cp(f"ERROR: Missing original_db_pk for item key {item_key_int} (DB_ID: {original_item_db_id}). L_PK:{lect_original_db_pk}, R_PK:{room_original_db_pk}, T_PK:{ts_original_db_pk}. Unscheduled.")
-                        self.unscheduled_item_original_db_ids.append(original_item_db_id); continue
-                    
-                    item_detail_from_data = self.data["scheduled_items"].get(item_key_int, {})
-                    solutions_list_of_dicts.append({
-                        "schedule_db_id": original_item_db_id, "course_id_str": item_course_id_str, 
-                        "lecturer_id_db": lect_original_db_pk, "classroom_id_db": room_original_db_pk, 
-                        "timeslot_id_db": ts_original_db_pk, 
-                        "course_name": item_detail_from_data.get("course_name", "N/A"),
-                        "num_students": item_detail_from_data.get("num_students", 0),
-                        "lecturer_name": lecturer_data.get("name", "N/A"),
-                        "room_code": classroom_data.get("room_code", "N/A"),
-                        "timeslot_info_str": (f"{timeslot_data.get('day_of_week','N/A')} ({timeslot_data.get('start_time','N/A')}-{timeslot_data.get('end_time','N/A')})")
+                    extracted_solutions_list.append({
+                        "schedule_db_id": original_item_id_sol,
+                        "course_id_str": item_vars_extract["course_id_str"],
+                        "lecturer_id_db": orig_lect_pk,
+                        "classroom_id_db": orig_room_pk,
+                        "timeslot_id_db": orig_ts_pk,
+                        "num_students": item_vars_extract.get("num_students", 0),
+                        "course_name": item_details_proc_data.get("course_name", "N/A"),
+                        "lecturer_name": lect_details_sol.get("name", "N/A"),
+                        "room_code": room_details_sol.get("room_code", "N/A"),
+                        "timeslot_info_str": (f"{ts_details_sol.get('day_of_week','')} "
+                                              f"({ts_details_sol.get('start_time','')}-"
+                                              f"{ts_details_sol.get('end_time','')})")
                     })
                     self.num_items_successfully_scheduled += 1
-                except cp_model. ennenum.INT_MAX_SENTINEL_TYPE_DO_NOT_USE_DIRECTLY as e_sentinel: 
-                    self._log_cp(f"INFO: Var not fixed for item key {item_key_int} (DB_ID: {original_item_db_id}). Err: {e_sentinel}. Unscheduled.")
-                    self.unscheduled_item_original_db_ids.append(original_item_db_id)
-                except Exception as e_extract_sol:
-                    self._log_cp(f"ERROR retrieving solution for item key {item_key_int} (DB_ID: {original_item_db_id}): {e_extract_sol}\n{traceback.format_exc()}")
-                    self.unscheduled_item_original_db_ids.append(original_item_db_id)
+                except Exception as e_extract:
+                    self._log_cp(f"ERROR: Solution extraction failed for item {original_item_id_sol}: {e_extract}")
+                    self.unscheduled_item_original_ids.append(original_item_id_sol)
             
-            self._log_cp(f"Finished processing solver results. Extracted {self.num_items_successfully_scheduled} fully scheduled items.")
-            if self.num_items_successfully_scheduled == self.num_items_targeted and self.num_items_targeted > 0:
-                self._log_cp(f"Successfully scheduled all {self.num_items_targeted} targeted items.")
-            elif self.num_items_successfully_scheduled > 0:
-                 self._log_cp(f"PARTIAL SCHEDULE: Scheduled {self.num_items_successfully_scheduled}/{self.num_items_targeted} items. "
-                              f"{len(self.unscheduled_item_original_db_ids)} items unplaced by CP (DB IDs: {self.unscheduled_item_original_db_ids[:5]}...).")
-            else: self._log_cp("WARNING: Solver FEASIBLE/OPTIMAL, but NO valid schedule items extracted.")
-        elif status_code == cp_model.INFEASIBLE: self._log_cp("Solver: Model is INFEASIBLE.")
-        else: self._log_cp(f"Solver: Stopped with status {self.solver_status}. No solution generated.")
-        
-        if self.num_items_targeted > 0: self.scheduling_success_rate = (self.num_items_successfully_scheduled / self.num_items_targeted) * 100
-        else: self.scheduling_success_rate = 0.0 if self.initial_scheduled_item_keys_int else 100.0 
-        
-        self._log_cp(f"CP-SAT model solving process ended. Returning {len(solutions_list_of_dicts)} actual scheduled items.")
-        return solutions_list_of_dicts, self.get_solution_metrics()
+            if self.num_items_successfully_scheduled < self.num_items_targeted and self.num_items_targeted > 0:
+                 self._log_cp(f"WARNING: PARTIAL SCHEDULE. Scheduled {self.num_items_successfully_scheduled}/{self.num_items_targeted} items by CP-SAT.")
+
+        elif solution_status_code == cp_model.INFEASIBLE:
+            self._log_cp("Solver Result: Model is INFEASIBLE. No solution satisfying all hard constraints exists.")
+            self.unscheduled_item_original_ids = [self.item_vars[key]["original_id"] for key in self.items_to_schedule_keys_int if key in self.item_vars]
+        else:
+            self._log_cp(f"Solver Result: Stopped with status '{self.solver_status}'. No solution generated or not guaranteed feasible/optimal.")
+            self.unscheduled_item_original_ids = [self.item_vars[key]["original_id"] for key in self.items_to_schedule_keys_int if key in self.item_vars]
+
+        if self.num_items_targeted > 0:
+            self.scheduling_success_rate = (self.num_items_successfully_scheduled / self.num_items_targeted) * 100
+        elif not self.initial_scheduled_item_keys_int: self.scheduling_success_rate = 100.0
+        else: self.scheduling_success_rate = 0.0
+
+        return extracted_solutions_list, self.get_solution_metrics()
 
     def get_solution_metrics(self) -> Dict[str, Any]:
         return {
@@ -306,109 +371,122 @@ class CourseSchedulingCPSAT:
             "num_items_targeted_for_cp_solver": self.num_items_targeted,
             "num_items_successfully_scheduled_by_cp": self.num_items_successfully_scheduled,
             "cp_scheduling_success_rate_percent": round(self.scheduling_success_rate, 2),
-            "num_items_unscheduled_by_cp_solver": len(self.unscheduled_item_original_db_ids),
-            "list_of_cp_unscheduled_item_original_db_ids": self.unscheduled_item_original_db_ids[:20]
+            "num_items_unscheduled_by_cp_solver": len(self.unscheduled_item_original_ids),
+            "list_of_cp_unscheduled_item_original_ids": self.unscheduled_item_original_ids[:10]
         }
 
 if __name__ == "__main__":
-    current_script_dir = os.path.dirname(os.path.abspath(__file__))
+    current_script_dir_cp_test = os.path.dirname(os.path.abspath(__file__))
+
+    # Note: These imports are required for the standalone test to run.
+    # In a full project, these would likely be handled by a higher-level script or module.
     try:
         from data_loader import load_all_data
-        from utils import preprocess_data_for_cp_and_ga, save_output_data_to_json 
-    except ImportError as e:
-        print(f"CP_MODULE MAIN ERROR: Error importing modules: {e}\n{traceback.format_exc()}")
+        from utils import preprocess_data_for_cp_and_ga, save_output_data_to_json
+        from models import ScheduledClass, Course
+    except ImportError as e_import_test_cp:
+        print(f"CP_MODULE_TEST ERROR: Could not import dependencies: {e_import_test_cp}", file=sys.stderr)
         exit(1)
 
-    output_dir_cp_real_test = os.path.join(current_script_dir, "output_data_cp_real_test")
-    if not os.path.exists(output_dir_cp_real_test): os.makedirs(output_dir_cp_real_test)
+    output_dir_for_cp_module_test = os.path.join(current_script_dir_cp_test, "output_data_cp_module_test")
+    os.makedirs(output_dir_for_cp_module_test, exist_ok=True)
 
-    test_semester_id_cp = 1 
-    print(f"CP_MODULE MAIN: Test with REAL DATA: Loading for semester_id = {test_semester_id_cp}...")
-    
+    test_semester_id_for_cp = 1
+    test_run_type_for_cp = "student_schedule_request"
+
     try:
-        db_loaded_data = load_all_data(semester_id_to_load=test_semester_id_cp)
-        if not any(db_loaded_data): 
-             print(f"CP_MODULE MAIN ERROR: load_all_data for semester {test_semester_id_cp} returned no data. Exiting."); exit(1)
-        real_input_scheduled_classes, real_input_instructors, real_input_classrooms, \
-        real_input_timeslots, real_input_students, real_input_courses_catalog = db_loaded_data
-    except Exception as e_load:
-        print(f"CP_MODULE MAIN ERROR: During load_all_data: {e_load}\n{traceback.format_exc()}"); exit(1)
+        _input_scheduled_classes_from_db, \
+        _input_instructors, \
+        _input_classrooms, \
+        _input_timeslots, \
+        _input_students, \
+        _input_courses_catalog_master = load_all_data(semester_id_to_load=test_semester_id_for_cp)
 
-    if not (real_input_instructors and real_input_classrooms and real_input_timeslots and real_input_courses_catalog):
-        print(f"CP_MODULE MAIN WARNING: Not all essential catalog data loaded for semester {test_semester_id_cp}.")
+        if not (_input_instructors and _input_classrooms and _input_timeslots and _input_courses_catalog_master):
+            print(f"CP_MODULE_TEST WARNING: Not all essential catalog data loaded for semester {test_semester_id_for_cp}. Test might be limited.", file=sys.stderr)
+    except Exception as e_load_test_cp:
+        print(f"CP_MODULE_TEST ERROR: During data_loader.load_all_data: {e_load_test_cp}", file=sys.stderr)
+        traceback.print_exc(file=sys.stderr)
+        exit(1)
 
-    print("CP_MODULE MAIN: Preprocessing loaded data...")
-    processed_input_data_for_cp = None
-    try:
-        processed_input_data_for_cp = preprocess_data_for_cp_and_ga(
-            input_scheduled_classes=real_input_scheduled_classes, 
-            input_courses_catalog=real_input_courses_catalog,
-            input_instructors=real_input_instructors,
-            input_classrooms=real_input_classrooms,
-            input_timeslots=real_input_timeslots,
-            input_students=real_input_students, 
-            semester_id_for_settings=test_semester_id_cp,
-            priority_settings=None 
-        )
-    except Exception as e_preprocess:
-        print(f"CP_MODULE MAIN ERROR: During utils.preprocess_data_for_cp_and_ga: {e_preprocess}\n{traceback.format_exc()}")
-        processed_input_data_for_cp = None 
+    reference_data_for_lecturer_map = _input_scheduled_classes_from_db
 
-    # Check if scheduled_items exists and is populated OR if input_scheduled_classes was empty (initial run)
-    proceed_to_solve = False
-    if processed_input_data_for_cp:
-        if processed_input_data_for_cp.get("scheduled_items"):
-            proceed_to_solve = True
-        elif not real_input_scheduled_classes: # Input was empty, so scheduled_items will be empty
-            print("CP_MODULE MAIN INFO: No input scheduled classes, so 'scheduled_items' is empty. This is okay for an initial run from scratch (though CP might not do much).")
-            # Depending on design, CP might still run if it's supposed to generate items from a catalog,
-            # but current CP design processes existing scheduled_items.
-            # For this test, we'll let it proceed if other data is present.
-            if processed_input_data_for_cp.get("lecturers") and processed_input_data_for_cp.get("classrooms") and processed_input_data_for_cp.get("timeslots"):
-                 # proceed_to_solve = True # Or False, if CP needs scheduled_items
-                 print("CP_MODULE MAIN INFO: No items to schedule, CP solver will likely not run or do anything meaningful.")
+    items_to_preprocess_for_test = []
+    student_priority_settings_for_test: Optional[Dict[str, Any]] = None
+
+    if test_run_type_for_cp == "admin_optimize_semester":
+        items_to_preprocess_for_test = _input_scheduled_classes_from_db
+        if not items_to_preprocess_for_test:
+            print(f"CP_MODULE_TEST INFO: Admin run, but no pre-existing scheduled classes in DB for semester {test_semester_id_for_cp}.")
+    elif test_run_type_for_cp == "student_schedule_request":
+        student_requested_course_ids_test = ["BSA105501", "INE105001"]
+        temp_id_test = -1
+        for course_id_test_req in student_requested_course_ids_test:
+            course_details_test = _input_courses_catalog_master.get(course_id_test_req)
+            if course_details_test:
+                items_to_preprocess_for_test.append(
+                    ScheduledClass(id=temp_id_test, course_id=course_id_test_req, semester_id=test_semester_id_for_cp,
+                                   num_students=course_details_test.expected_students or 25)
+                )
+                temp_id_test -=1
             else:
-                print("CP_MODULE MAIN ERROR: No scheduled_items and other essential processed data missing.")
-        else: # Input SCs existed, but scheduled_items is empty -> error in preprocessing or filtering
-             print("CP_MODULE MAIN WARNING: Preprocessing successful, but no 'scheduled_items' found while input SCs existed. Check input/preprocessing logs.")
-    else:
-        print("CP_MODULE MAIN ERROR: Failed to preprocess real data. Cannot proceed with CP-SAT solver test.")
+                print(f"CP_MODULE_TEST WARNING: Mock student request: CourseID '{course_id_test_req}' not found in catalog.")
+        if not items_to_preprocess_for_test:
+             print(f"CP_MODULE_TEST ERROR: Student run, failed to create any virtual items from requested courses.", file=sys.stderr); exit(1)
+        student_priority_settings_for_test = {"student_id": "S_TEST_CP_001"}
 
+    processed_input_for_cp_test = None
+    try:
+        processed_input_for_cp_test = preprocess_data_for_cp_and_ga(
+            input_scheduled_classes=items_to_preprocess_for_test,
+            input_courses_catalog=_input_courses_catalog_master,
+            input_instructors=_input_instructors,
+            input_classrooms=_input_classrooms,
+            input_timeslots=_input_timeslots,
+            input_students=_input_students,
+            reference_scheduled_classes=reference_data_for_lecturer_map,
+            semester_id_for_settings=test_semester_id_for_cp,
+            priority_settings=student_priority_settings_for_test,
+            run_type=test_run_type_for_cp
+        )
+    except Exception as e_preprocess_test_cp:
+        print(f"CP_MODULE_TEST ERROR: During utils.preprocess_data_for_cp_and_ga: {e_preprocess_test_cp}", file=sys.stderr)
+        traceback.print_exc(file=sys.stderr)
+        exit(1)
 
-    if proceed_to_solve:
+    if not processed_input_for_cp_test:
+        print("CP_MODULE_TEST ERROR: Preprocessing returned no data.", file=sys.stderr)
+        exit(1)
+    if not processed_input_for_cp_test.get("scheduled_items") and items_to_preprocess_for_test :
+        print("CP_MODULE_TEST ERROR: Preprocessing successful, but no 'scheduled_items' found in processed data, while input items existed.", file=sys.stderr)
+
+    if processed_input_for_cp_test.get("scheduled_items"):
         try:
-            time_limit_for_cp_test = 60.0 
-            num_potential_items = len(processed_input_data_for_cp.get("scheduled_items", {})) # type: ignore
-            print(f"CP_MODULE MAIN: Initializing CP-SAT solver. Processed data has {num_potential_items} potential items.")
-            
-            def simple_test_logger_cp(msg): print(f"LOGGER_CP_CALLBACK: {msg}")
-            cp_solver_instance = CourseSchedulingCPSAT(processed_input_data_for_cp, progress_logger=simple_test_logger_cp) # type: ignore
-            
-            print(f"CP_MODULE MAIN: Solving with CP-SAT. Time limit: {time_limit_for_cp_test}s")
-            cp_schedule_result_list, cp_metrics_result = cp_solver_instance.solve(time_limit_seconds=time_limit_for_cp_test)
-            
-            print("\n--- CP-SAT Solution Metrics (from cp_module test) ---")
-            for key, value in cp_metrics_result.items():
-                if key == "list_of_cp_unscheduled_item_original_db_ids" and isinstance(value, list) and len(value) > 5:
-                     print(f"  {key}: {value[:5]}... (and {len(value)-5} more)")
-                else: print(f"  {key}: {value}")
+            time_limit_for_cp_module_test = 15.0
 
-            output_file_path_cp_test = os.path.join(output_dir_cp_real_test, f"cp_module_real_sem_{test_semester_id_cp}_solution.json")
-            final_output_for_json = {
-                "test_run_info": {"module": "cp_module.py", "semester_id_tested": test_semester_id_cp, "status_message": "Test completed"},
-                "cp_solver_metrics": cp_metrics_result,
-                "cp_generated_schedule": cp_schedule_result_list if cp_schedule_result_list else []
+            def cp_module_test_logger(msg_test_cp): pass
+
+            cp_solver_test_instance = CourseSchedulingCPSAT(
+                processed_input_for_cp_test,
+                progress_logger=cp_module_test_logger,
+                run_type=test_run_type_for_cp
+            )
+
+            cp_schedule_result_list_test, cp_metrics_result_test = cp_solver_test_instance.solve(time_limit_seconds=time_limit_for_cp_module_test)
+
+            output_file_path_for_cp_test_run = os.path.join(output_dir_for_cp_module_test, f"cp_module_test_sem{test_semester_id_for_cp}_runtype_{test_run_type_for_cp}.json")
+            final_output_for_json_test = {
+                "test_run_info": {"module": "cp_module.py_standalone", "semester_id": test_semester_id_for_cp, "run_type": test_run_type_for_cp},
+                "cp_solver_metrics": cp_metrics_result_test,
+                "cp_generated_schedule": cp_schedule_result_list_test if cp_schedule_result_list_test else []
             }
-            if cp_schedule_result_list:
-                print(f"\n--- CP-SAT Feasible Schedule Found ({len(cp_schedule_result_list)} items) ---")
-                for item_idx, scheduled_item_dict in enumerate(cp_schedule_result_list[:min(3, len(cp_schedule_result_list))]):
-                    print(f"  Item {item_idx + 1}: {scheduled_item_dict}")
-                if len(cp_schedule_result_list) > 3: print("  ...")
-            else: print(f"\nCP_MODULE MAIN: No complete/feasible schedule found by CP-SAT for semester {test_semester_id_cp}.")
-            
-            save_output_data_to_json(final_output_for_json, output_file_path_cp_test)
-            print(f"CP_MODULE MAIN: Solution and metrics saved to: {output_file_path_cp_test}")
-        except Exception as e_solve:
-            print(f"CP_MODULE MAIN ERROR: During CP-SAT solving or output saving: {e_solve}\n{traceback.format_exc()}")
-    
-    print("\nCP_MODULE MAIN: Test finished.")
+
+            save_output_data_to_json(final_output_for_json_test, output_file_path_for_cp_test_run)
+
+        except Exception as e_solve_test_cp:
+            print(f"CP_MODULE_TEST ERROR: During CP-SAT solving or output saving: {e_solve_test_cp}", file=sys.stderr)
+            traceback.print_exc(file=sys.stderr)
+    else:
+        print("CP_MODULE_TEST INFO: Skipping CP-SAT solving as no schedulable items were prepared by utils.py.")
+
+    print("\n--- CP_MODULE.PY: Standalone Test Finished ---")
